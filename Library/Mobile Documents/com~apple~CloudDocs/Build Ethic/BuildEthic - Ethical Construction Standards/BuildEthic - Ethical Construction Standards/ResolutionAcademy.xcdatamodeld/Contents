@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22758" systemVersion="23F79" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="Course" representedClassName="Course" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String"/>
+        <attribute name="title" optional="NO" attributeType="String"/>
+        <attribute name="category" optional="NO" attributeType="String"/>
+        <attribute name="ceuValue" optional="NO" attributeType="Double" defaultValueString="0.0"/>
+        <attribute name="level" optional="NO" attributeType="String"/>
+        <attribute name="courseDescription" optional="NO" attributeType="String"/>
+        <relationship name="lessons" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Lesson" inverseName="course" inverseEntity="Lesson"/>
+    </entity>
+    <entity name="Lesson" representedClassName="Lesson" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String"/>
+        <attribute name="title" optional="NO" attributeType="String"/>
+        <attribute name="objective" optional="NO" attributeType="String"/>
+        <attribute name="fieldIntegration" optional="NO" attributeType="String"/>
+        <relationship name="course" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Course" inverseName="lessons" inverseEntity="Course"/>
+        <relationship name="quizQuestions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="QuizQuestion" inverseName="lesson" inverseEntity="QuizQuestion"/>
+    </entity>
+    <entity name="QuizQuestion" representedClassName="QuizQuestion" syncable="YES" codeGenerationType="class">
+        <attribute name="question" optional="NO" attributeType="String"/>
+        <attribute name="answer" optional="NO" attributeType="String"/>
+        <relationship name="lesson" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Lesson" inverseName="quizQuestions" inverseEntity="Lesson"/>
+    </entity>
+    <entity name="CDAssessment" representedClassName="CDAssessment" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String"/>
+        <attribute name="courseId" optional="NO" attributeType="String"/>
+        <attribute name="scorePct" optional="NO" attributeType="Double" defaultValueString="0.0"/>
+        <attribute name="passed" optional="NO" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="submittedAt" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="CDChecklist" representedClassName="CDChecklist" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String"/>
+        <attribute name="name" optional="NO" attributeType="String"/>
+        <attribute name="itemsJSON" optional="NO" attributeType="String"/>
+        <attribute name="projectId" optional="YES" attributeType="String"/>
+        <attribute name="completedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="CDLicense" representedClassName="CDLicense" syncable="YES" codeGenerationType="class">
+        <attribute name="id" optional="NO" attributeType="String"/>
+        <attribute name="name" optional="NO" attributeType="String"/>
+        <attribute name="state" optional="NO" attributeType="String"/>
+        <attribute name="expiresOn" optional="NO" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="number" optional="NO" attributeType="String"/>
+    </entity>
+</model>

@@ -1,0 +1,237 @@
+{
+  "courses": [
+    {
+      "id": "safety_101",
+      "title": "Jobsite Safety Orientation",
+      "category": "Safety & Compliance",
+      "ceuValue": 0.1,
+      "level": "Beginner",
+      "description": "An essential orientation to workplace safety, identifying common jobsite hazards and personal protective measures.",
+      "lessons": [
+        {
+          "id": "lesson_1",
+          "title": "Understanding Workplace Hazards",
+          "objective": "Identify and classify common workplace hazards according to OSHA standards.",
+          "fieldIntegration": "Checklist: Safety Inspection",
+          "quiz": {
+            "questions": [
+              { "q": "What is the most common cause of jobsite injuries?", "a": "Falls" },
+              { "q": "When must PPE be worn?", "a": "Whenever there is potential exposure to hazards" }
+            ]
+          }
+        },
+        {
+          "id": "lesson_2",
+          "title": "Personal Protective Equipment (PPE)",
+          "objective": "Select and use appropriate PPE for different jobsite conditions.",
+          "fieldIntegration": "Checklist: PPE Verification",
+          "quiz": {
+            "questions": [
+              { "q": "Name two types of PPE for respiratory protection.", "a": "Dust masks and respirators" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "concrete_basics",
+      "title": "Concrete Basics: Volume & Mix",
+      "category": "Technical Skills",
+      "ceuValue": 0.1,
+      "level": "Beginner",
+      "description": "Learn how to calculate concrete volume, account for waste, and select proper mix types for site conditions.",
+      "lessons": [
+        {
+          "id": "lesson_1",
+          "title": "Volume Calculation Fundamentals",
+          "objective": "Apply geometric formulas to determine total cubic yardage.",
+          "fieldIntegration": "Calculator: Concrete Volume",
+          "quiz": {
+            "questions": [
+              { "q": "What is the formula for cubic volume?", "a": "Length × Width × Height" }
+            ]
+          }
+        },
+        {
+          "id": "lesson_2",
+          "title": "Mix Ratios and Adjustments",
+          "objective": "Identify standard mix ratios and when to adjust for conditions.",
+          "fieldIntegration": "Field Note: Mix Adjustment Log",
+          "quiz": {
+            "questions": [
+              { "q": "What is a standard mix ratio for general concrete?", "a": "1:2:3 (cement:sand:aggregate)" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "osha_hazcom",
+      "title": "OSHA Hazard Communication",
+      "category": "Compliance Training",
+      "ceuValue": 0.1,
+      "level": "Intermediate",
+      "description": "Covers OSHA's Hazard Communication Standard, GHS labeling, and Safety Data Sheet interpretation.",
+      "lessons": [
+        {
+          "id": "lesson_1",
+          "title": "Hazard Communication Basics",
+          "objective": "Explain the purpose and structure of OSHA's Hazard Communication Standard.",
+          "fieldIntegration": "Checklist: Chemical Inventory",
+          "quiz": {
+            "questions": [
+              { "q": "What does GHS stand for?", "a": "Globally Harmonized System" }
+            ]
+          }
+        },
+        {
+          "id": "lesson_2",
+          "title": "Reading Safety Data Sheets (SDS)",
+          "objective": "Interpret key sections of an SDS to identify risks and precautions.",
+          "fieldIntegration": "Photo Upload: SDS Label Example",
+          "quiz": {
+            "questions": [
+              { "q": "What section of an SDS covers first aid measures?", "a": "Section 4" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "supervisor_communication",
+      "title": "Supervisor Communication Skills",
+      "category": "Leadership & Communication",
+      "ceuValue": 0.1,
+      "level": "Intermediate",
+      "description": "Develop strong interpersonal and leadership communication skills for effective team management.",
+      "lessons": [
+        {
+          "id": "lesson_1",
+          "title": "Active Listening & Feedback",
+          "objective": "Demonstrate effective active listening and constructive feedback in jobsite settings.",
+          "fieldIntegration": "Scenario: Team Meeting Simulation",
+          "quiz": {
+            "questions": [
+              { "q": "What is one technique to ensure you understand a worker's concern?", "a": "Repeat back their statement in your own words" }
+            ]
+          }
+        },
+        {
+          "id": "lesson_2",
+          "title": "Conflict Resolution",
+          "objective": "Apply structured problem-solving to manage workplace disagreements.",
+          "fieldIntegration": "Checklist: Incident Communication Log",
+          "quiz": {
+            "questions": [
+              { "q": "What's the first step in resolving conflict?", "a": "Identify the root issue" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "waste_reduction",
+      "title": "Waste Reduction & Material Recycling",
+      "category": "Environmental Responsibility",
+      "ceuValue": 0.1,
+      "level": "Intermediate",
+      "description": "Learn how to minimize material waste and improve site sustainability through smart resource management.",
+      "lessons": [
+        {
+          "id": "lesson_1",
+          "title": "Sources of Construction Waste",
+          "objective": "Identify key contributors to material waste on job sites.",
+          "fieldIntegration": "Checklist: Waste Audit",
+          "quiz": {
+            "questions": [
+              { "q": "What material is most commonly wasted?", "a": "Concrete" }
+            ]
+          }
+        },
+        {
+          "id": "lesson_2",
+          "title": "Recycling Best Practices",
+          "objective": "Implement recycling and reuse strategies aligned with EPA guidelines.",
+          "fieldIntegration": "Photo Upload: Recycled Material Bin",
+          "quiz": {
+            "questions": [
+              { "q": "What is a best practice for managing recyclable materials?", "a": "Label bins and train staff on proper sorting" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "roof_systems_anatomy",
+      "title": "Understanding Roof Systems — From Deck to Shingle",
+      "category": "Technical Skills",
+      "ceuValue": 0.1,
+      "level": "Beginner-Intermediate",
+      "description": "A practical introduction to residential and light‑commercial roof systems, layer by layer. Learn structure, moisture barriers, flashings, coverings, and ventilation with field‑ready terminology and practices.",
+      "lessons": [
+        {
+          "id": "roof_anatomy_terms",
+          "title": "Roof Anatomy & Terminology",
+          "objective": "Identify all major roof components, describe their function, and use correct terminology for estimating and inspection.",
+          "fieldIntegration": "Activity: Label layers on a roof cross‑section image (deck, underlayment, flashing, covering, vents).",
+          "quiz": {
+            "questions": [
+              { "q": "What structural members transfer roof loads to walls and foundations?", "a": "Rafters or trusses" },
+              { "q": "Name two common steep-slope roof shapes.", "a": "Gable and hip" },
+              { "q": "What sheet material is commonly installed over framing before underlayment?", "a": "Roof deck sheathing such as OSB or plywood" }
+            ]
+          }
+        },
+        {
+          "id": "deck_underlayment",
+          "title": "Roof Deck & Underlayment",
+          "objective": "Assess deck condition and select/install appropriate underlayment types with correct laps, fastening, and sequencing.",
+          "fieldIntegration": "Checklist: Deck condition and underlayment overlaps/fasteners verified on a sample area.",
+          "quiz": {
+            "questions": [
+              { "q": "What is the primary purpose of roof underlayment?", "a": "Secondary moisture barrier beneath the roof covering" },
+              { "q": "List two common underlayment categories.", "a": "Asphalt-saturated felt and synthetic sheet underlayments" },
+              { "q": "What is a typical side-lap for #15 felt on standard slopes (verify local code/manufacturer)?", "a": "About 2 inches side-lap and about 4 inches end-lap" }
+            ]
+          }
+        },
+        {
+          "id": "flashings_penetrations",
+          "title": "Flashings and Penetrations",
+          "objective": "Differentiate step vs. counter flashing and apply correct sequencing at walls, chimneys, and roof edges to prevent leaks.",
+          "fieldIntegration": "Photo audit: Document one penetration and identify primary and counter-flashing elements.",
+          "quiz": {
+            "questions": [
+              { "q": "How does step flashing differ from counter flashing?", "a": "Step flashing interleaves with each shingle course; counter flashing covers/overlaps the step flashing and is anchored to the vertical surface." },
+              { "q": "Where is drip edge installed relative to underlayment at eaves?", "a": "Drip edge is typically below the underlayment at eaves and above at rakes; verify local code and manufacturer guidance." }
+            ]
+          }
+        },
+        {
+          "id": "coverings_shingles",
+          "title": "Roof Coverings (Shingles & Alternatives)",
+          "objective": "Explain shingle composition, classes, wind ratings, and correct fastening/stagger patterns; recognize alternative materials.",
+          "fieldIntegration": "Field check: Verify nailing pattern and exposure on a sample course against manufacturer instructions.",
+          "quiz": {
+            "questions": [
+              { "q": "What is the function of starter strips at eaves?", "a": "Provide adhesive bond and correct shingle offset at the roof edge to resist wind uplift and water intrusion." },
+              { "q": "Why is correct nail placement critical on asphalt shingles?", "a": "To secure through the nailing zone for wind rating and to prevent blow-offs or leaks." }
+            ]
+          }
+        },
+        {
+          "id": "ventilation_moisture",
+          "title": "Ventilation & Moisture Control",
+          "objective": "Design balanced intake and exhaust ventilation, prevent ice dams, and coordinate insulation and air/vapor control.",
+          "fieldIntegration": "Calculator: Intake vs. exhaust net free area (NFA) using manufacturer NFA values.",
+          "quiz": {
+            "questions": [
+              { "q": "What is a balanced attic ventilation strategy?", "a": "Providing approximately equal net free area at intake (soffit) and exhaust (ridge/gable) to maintain airflow." },
+              { "q": "Name one method to help prevent ice dams.", "a": "Continuous soffit-to-ridge ventilation with proper insulation and air sealing; use of ice barrier in cold climates." }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
