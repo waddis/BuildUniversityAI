@@ -197,4 +197,4 @@ For questions or support, contact: support@resolutionacademy.app
 
 ---
 
-**Remember: Excellence through education** — skills, knowledge, and professional growth.
+**Re
