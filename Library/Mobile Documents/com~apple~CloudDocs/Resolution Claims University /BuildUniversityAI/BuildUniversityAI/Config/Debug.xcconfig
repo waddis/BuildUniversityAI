@@ -1,3 +1,4 @@
 API_BASE_URL = https://api-dev.builduniversity.ai
 FEATURE_FLAGS_JSON = {"ar_enabled": true, "offline_mode": false}
 APP_DISPLAY_NAME = BuildUniversityAI Dev
+

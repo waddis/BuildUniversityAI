@@ -51,3 +51,4 @@ Procfile
 # Only include BuildUniversityAI project
 !BuildUniversityAI/
 !ConstructionCore/
+
