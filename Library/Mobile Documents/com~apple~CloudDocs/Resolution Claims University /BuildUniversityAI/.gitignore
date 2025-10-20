@@ -1,0 +1,53 @@
+# Xcode
+.DS_Store
+*/build/*
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+profile
+*.moved-aside
+DerivedData
+.idea/
+*.hmap
+*.xccheckout
+*.xcworkspace
+!default.xcworkspace
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/
+
+# Personal files (exclude everything outside BuildUniversityAI)
+My Drive/
+Movies/
+Music/
+Pictures/
+Public/
+PycharmProjects/
+all roof/
+public_adjuster_ai/
+untitled folder/
+virtual_assistant/
+Snowboarding 2024.mp4
+Procfile
+
+# Only include BuildUniversityAI project
+!BuildUniversityAI/
+!ConstructionCore/
