@@ -441,7 +441,7 @@ fileprivate struct RoofSceneView: UIViewRepresentable {
         labelNode.name = "Label"
         let geo = SCNText(string: text, extrusionDepth: 0.001)
         geo.font = UIFont.systemFont(ofSize: 0.12, weight: .bold)
-        geo.flatness = 0.2
+        geo.flatness = 0.6
         geo.firstMaterial = {
             let m = SCNMaterial()
             m.diffuse.contents = color

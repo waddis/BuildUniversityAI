@@ -8,6 +8,12 @@ struct ResolutionAcademyApp: App {
     init() {
         // Seed data loading disabled for now
         print("Resolution Academy app starting...")
+        // Configure shared URL cache for better network re-use
+        URLCache.shared = URLCache(
+            memoryCapacity: 50 * 1024 * 1024,
+            diskCapacity: 200 * 1024 * 1024,
+            directory: nil
+        )
     }
 
     var body: some Scene {
