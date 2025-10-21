@@ -60,112 +60,122 @@ public protocol JurisdictionProvider {
 }
 
 public final class DefaultJurisdictionProvider: JurisdictionProvider {
+    private let networkManager = SecureNetworkManager.shared
+    
     public init() {}
     
     public func snapshot(forZIP zip: String) async throws -> JurisdictionSnapshot {
-        // Real jurisdiction data lookup
-        guard zip.count >= 5 else {
+        // Validate input
+        guard ValidationUtils.isValidZIPCode(zip) else {
             throw JurisdictionError.invalidZIP
         }
         
-        // Use a real ZIP code lookup service
-        let zipData = try await lookupZIPCode(zip)
-        
-        // Convert to our jurisdiction snapshot format
-        let climate = JurisdictionSnapshot.Climate(
-            ieccZone: zipData.climateZone ?? "Unknown",
-            source: "ASCE 7-22",
-            retrievedAt: Date()
-        )
-        
-        let hazards = JurisdictionSnapshot.Hazards(
-            windVult: zipData.windSpeed,
-            snowPs: zipData.snowLoad,
-            seismicSs: zipData.seismicSs,
-            source: "ASCE 7-22 Hazard Tool",
-            retrievedAt: Date()
-        )
-        
-        let adoptions = JurisdictionSnapshot.Adoptions(
-            irc: zipData.ircEdition,
-            iecc: zipData.ieccEdition,
-            nec: zipData.necEdition,
-            imc: zipData.imcEdition,
-            ipc: zipData.ipcEdition,
-            notes: zipData.adoptionNotes,
-            source: "ICC State Adoption Database",
-            retrievedAt: Date()
-        )
-        
-        return JurisdictionSnapshot(
-            zip: zip,
-            city: zipData.city,
-            state: zipData.state,
-            climate: climate,
-            hazards: hazards,
-            adoptions: adoptions,
-            amendments: zipData.localAmendments
+        do {
+            // Use secure network manager for ZIP code lookup
+            let zipResponse = try await networkManager.request(
+                .zipCodeLookup(zip: zip),
+                responseType: ZIPCodeResponse.self
+            )
+            
+            guard let zipData = zipResponse.results.first?.value.first else {
+                throw JurisdictionError.zipNotFound
+            }
+            
+            // Validate state and city data
+            guard ValidationUtils.isValidStateCode(zipData.state),
+                  ValidationUtils.isValidCityName(zipData.city) else {
+                throw JurisdictionError.invalidLocationData
+            }
+            
+            // Get additional jurisdiction data
+            let jurisdictionData = try await getJurisdictionData(
+                state: zipData.state,
+                city: zipData.city
+            )
+            
+            // Convert to our jurisdiction snapshot format
+            let climate = JurisdictionSnapshot.Climate(
+                ieccZone: jurisdictionData.climateZone ?? "Unknown",
+                source: "ASCE 7-22",
+                retrievedAt: Date()
+            )
+            
+            let hazards = JurisdictionSnapshot.Hazards(
+                windVult: jurisdictionData.windSpeed,
+                snowPs: jurisdictionData.snowLoad,
+                seismicSs: jurisdictionData.seismicSs,
+                source: "ASCE 7-22 Hazard Tool",
+                retrievedAt: Date()
+            )
+            
+            let adoptions = JurisdictionSnapshot.Adoptions(
+                irc: jurisdictionData.ircEdition,
+                iecc: jurisdictionData.ieccEdition,
+                nec: jurisdictionData.necEdition,
+                imc: jurisdictionData.imcEdition,
+                ipc: jurisdictionData.ipcEdition,
+                notes: jurisdictionData.adoptionNotes,
+                source: "ICC State Adoption Database",
+                retrievedAt: Date()
+            )
+            
+            return JurisdictionSnapshot(
+                zip: zip,
+                city: zipData.city,
+                state: zipData.state,
+                climate: climate,
+                hazards: hazards,
+                adoptions: adoptions,
+                amendments: jurisdictionData.localAmendments
+            )
+            
+        } catch let error as NetworkError {
+            throw mapNetworkError(error)
+        } catch {
+            throw JurisdictionError.networkError
+        }
+    }
+    
+    private func getJurisdictionData(state: String, city: String) async throws -> JurisdictionData {
+        return try await networkManager.request(
+            .jurisdictionLookup(state: state, city: city),
+            responseType: JurisdictionData.self
         )
     }
     
-    private func lookupZIPCode(_ zip: String) async throws -> ZIPCodeData {
-        // Real ZIP code lookup implementation
-        let url = URL(string: "https://api.zipcodebase.com/v1/search?apikey=YOUR_API_KEY&codes=\(zip)")!
-        
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw JurisdictionError.networkError
+    private func mapNetworkError(_ error: NetworkError) -> JurisdictionError {
+        switch error {
+        case .clientError(let code) where code == 404:
+            return .zipNotFound
+        case .clientError(let code) where code == 400:
+            return .invalidZIP
+        case .serverError, .networkError:
+            return .networkError
+        default:
+            return .networkError
         }
-        
-        let zipResponse = try JSONDecoder().decode(ZIPCodeResponse.self, from: data)
-        
-        guard let zipData = zipResponse.results.first?.value.first else {
-            throw JurisdictionError.zipNotFound
-        }
-        
-        // Get additional jurisdiction data
-        let jurisdictionData = try await getJurisdictionData(zipData.state, zipData.city)
-        
-        return ZIPCodeData(
-            zip: zip,
-            city: zipData.city,
-            state: zipData.state,
-            climateZone: jurisdictionData.climateZone,
-            windSpeed: jurisdictionData.windSpeed,
-            snowLoad: jurisdictionData.snowLoad,
-            seismicSs: jurisdictionData.seismicSs,
-            ircEdition: jurisdictionData.ircEdition,
-            ieccEdition: jurisdictionData.ieccEdition,
-            necEdition: jurisdictionData.necEdition,
-            imcEdition: jurisdictionData.imcEdition,
-            ipcEdition: jurisdictionData.ipcEdition,
-            adoptionNotes: jurisdictionData.adoptionNotes,
-            localAmendments: jurisdictionData.localAmendments
-        )
-    }
-    
-    private func getJurisdictionData(_ state: String, _ city: String) async throws -> JurisdictionData {
-        // Get real jurisdiction data from ICC and ASCE sources
-        let url = URL(string: "https://api.iccsafe.org/jurisdiction/\(state)/\(city)")!
-        
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw JurisdictionError.networkError
-        }
-        
-        return try JSONDecoder().decode(JurisdictionData.self, from: data)
     }
 }
 
 // MARK: - Supporting Types
-enum JurisdictionError: Error {
+enum JurisdictionError: Error, LocalizedError {
     case invalidZIP
     case networkError
     case zipNotFound
+    case invalidLocationData
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidZIP:
+            return "Invalid ZIP code format. Please enter a 5-digit US ZIP code."
+        case .networkError:
+            return "Network error. Please check your connection and try again."
+        case .zipNotFound:
+            return "ZIP code not found. Please verify and try again."
+        case .invalidLocationData:
+            return "Invalid location data received from server."
+        }
+    }
 }
 
 struct ZIPCodeResponse: Codable {
@@ -270,14 +280,11 @@ struct CodesView: View {
         
         do {
             snapshot = try await provider.snapshot(forZIP: zip)
-        } catch JurisdictionError.invalidZIP {
-            errorText = "Please enter a valid 5-digit ZIP code"
-        } catch JurisdictionError.zipNotFound {
-            errorText = "ZIP code not found. Please verify and try again."
-        } catch JurisdictionError.networkError {
-            errorText = "Unable to connect to jurisdiction database. Please check your internet connection."
+        } catch let error as JurisdictionError {
+            errorText = error.localizedDescription
         } catch {
-            errorText = "Lookup failed: \(error.localizedDescription)"
+            // Generic error - don't expose internal details
+            errorText = "Unable to retrieve jurisdiction data. Please try again later."
         }
     }
 }

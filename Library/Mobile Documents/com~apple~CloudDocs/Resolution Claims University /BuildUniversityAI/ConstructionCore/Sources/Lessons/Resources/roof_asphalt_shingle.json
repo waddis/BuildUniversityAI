@@ -1,0 +1,75 @@
+{
+  "id": "roof_asphalt_shingle",
+  "system": "Roof",
+  "module": "Asphalt Shingle",
+  "title": "Roof: Asphalt Shingle Layering",
+  "objectives": [
+    "Understand roof layer order from deck to vents",
+    "Know 2:12–<4:12 double-underlayment rule (IRC R905.1.2)",
+    "Identify flashing types and where they go"
+  ],
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Structure",
+      "caption": "Rafters/trusses support the deck; layout impacts valley/hip framing.",
+      "animationKey": "Roof_Structure",
+      "codeRefs": [
+        { "family": "IRC", "edition": "2021", "section": "R802", "title": "Roof Framing" }
+      ],
+      "layerTags": ["Structure"]
+    },
+    {
+      "id": "s2",
+      "title": "Deck/Sheathing",
+      "caption": "OSB/plywood deck fastened to schedule; nailing pattern matters.",
+      "animationKey": "Roof_Deck",
+      "codeRefs": [
+        { "family": "IRC", "edition": "2021", "section": "R803", "title": "Roof Sheathing" }
+      ],
+      "layerTags": ["Deck"]
+    },
+    {
+      "id": "s3",
+      "title": "Edge Metals",
+      "caption": "Drip edge at eaves and rakes; correct lap and sequence.",
+      "animationKey": "Roof_EdgeMetals",
+      "codeRefs": [
+        { "family": "IRC", "edition": "2021", "section": "R905.2", "title": "Asphalt Shingles - General" }
+      ],
+      "layerTags": ["EdgeMetals"]
+    },
+    {
+      "id": "s4",
+      "title": "Underlayment",
+      "caption": "2:12–<4:12 pitches require double underlayment; <2:12 use low-slope systems.",
+      "animationKey": "Roof_Underlayment",
+      "codeRefs": [
+        { "family": "IRC", "edition": "2021", "section": "R905.1.2", "title": "Ice barrier/underlayment limits" }
+      ],
+      "layerTags": ["Underlayment"]
+    },
+    {
+      "id": "s5",
+      "title": "Covering",
+      "caption": "Shingle courses; follow manufacturer listing for nailing and exposure.",
+      "animationKey": "Roof_Covering",
+      "codeRefs": [
+        { "family": "MANUFACTURER", "edition": "Listing", "section": "Install", "title": "Follow listing and manual" }
+      ],
+      "layerTags": ["Covering"]
+    },
+    {
+      "id": "s6",
+      "title": "Flashings & Vents",
+      "caption": "Valley, step/headwall flashings, pipe boots, and ridge vent complete the system.",
+      "animationKey": "Roof_FlashingVent",
+      "codeRefs": [
+        { "family": "IRC", "edition": "2021", "section": "R903", "title": "Weather Protection" }
+      ],
+      "layerTags": ["Flashings","Ventilation"]
+    }
+  ],
+  "estimatedMinutes": 8,
+  "editionNotes": "Edition references are illustrative; always verify local adoption and amendments."
+}
