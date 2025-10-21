@@ -175,7 +175,8 @@ fileprivate struct RoofSceneView: UIViewRepresentable {
         view.backgroundColor = UIColor.systemBackground
         view.allowsCameraControl = true
         view.autoenablesDefaultLighting = true
-        view.antialiasingMode = .multisampling4X
+        view.antialiasingMode = .multisampling2X
+        view.preferredFramesPerSecond = 30
 
         let scene = SCNScene()
         view.scene = scene
