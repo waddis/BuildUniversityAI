@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ExploreView: View {
+    @State private var selectedDemo: ARDemo?
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -22,9 +24,9 @@ struct ExploreView: View {
                     }
                     .padding(.top, 20)
                     
-                    // Quick Demos Section
+                    // Interactive Demos Section
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Quick Demos")
+                        Text("Interactive Demos")
                             .font(.headline)
                             .padding(.horizontal)
                         
@@ -32,86 +34,178 @@ struct ExploreView: View {
                             GridItem(.flexible()),
                             GridItem(.flexible())
                         ], spacing: 16) {
-                            DemoCard(
-                                title: "Roof Assessment",
-                                description: "Identify hail damage patterns",
-                                icon: "house.fill",
-                                color: .orange
-                            )
-                            
-                            DemoCard(
-                                title: "Water Intrusion",
-                                description: "Trace moisture paths",
-                                icon: "drop.fill",
-                                color: .blue
-                            )
-                            
-                            DemoCard(
-                                title: "Foundation Check",
-                                description: "Detect settlement issues",
-                                icon: "building.columns.fill",
-                                color: .brown
-                            )
-                            
-                            DemoCard(
-                                title: "Electrical Safety",
-                                description: "Locate hazards safely",
-                                icon: "bolt.fill",
-                                color: .yellow
-                            )
+                            ForEach(ARDemo.allCases) { demo in
+                                DemoCard(
+                                    demo: demo,
+                                    onTap: { selectedDemo = demo }
+                                )
+                            }
                         }
                         .padding(.horizontal)
                     }
                     
-                    // Coming Soon Section
+                    // AR Instructions
                     VStack(spacing: 12) {
-                        Text("More AR Experiences")
+                        Text("How to Use AR")
                             .font(.headline)
                         
-                        Text("Additional interactive demos and guided assessments are coming soon. Stay tuned for updates!")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Point your device at a flat surface", systemImage: "viewfinder")
+                            Label("Tap to place the 3D model", systemImage: "hand.tap")
+                            Label("Pinch to zoom, drag to rotate", systemImage: "arrow.up.left.and.arrow.down.right")
+                            Label("Use AR mode for immersive learning", systemImage: "arkit")
+                        }
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                     }
-                    .padding(.vertical, 20)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.regularMaterial)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(.quaternary, lineWidth: 1)
+                    )
+                    .padding(.horizontal)
+                    
+                    Spacer(minLength: 20)
                 }
             }
             .navigationTitle("Explore")
+            .sheet(item: $selectedDemo) { demo in
+                ARDemoView(demo: demo)
+            }
+        }
+    }
+}
+
+enum ARDemo: String, CaseIterable, Identifiable {
+    case roofAssessment = "roof"
+    case waterIntrusion = "water"
+    case foundationCheck = "foundation"
+    case electricalSafety = "electrical"
+    
+    var id: String { rawValue }
+    
+    var title: String {
+        switch self {
+        case .roofAssessment: return "Roof Assessment"
+        case .waterIntrusion: return "Water Intrusion"
+        case .foundationCheck: return "Foundation Check"
+        case .electricalSafety: return "Electrical Safety"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .roofAssessment: return "Identify hail damage patterns"
+        case .waterIntrusion: return "Trace moisture paths"
+        case .foundationCheck: return "Detect settlement issues"
+        case .electricalSafety: return "Locate hazards safely"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .roofAssessment: return "house.fill"
+        case .waterIntrusion: return "drop.fill"
+        case .foundationCheck: return "building.columns.fill"
+        case .electricalSafety: return "bolt.fill"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .roofAssessment: return .orange
+        case .waterIntrusion: return .blue
+        case .foundationCheck: return .brown
+        case .electricalSafety: return .yellow
         }
     }
 }
 
 struct DemoCard: View {
-    let title: String
-    let description: String
-    let icon: String
-    let color: Color
+    let demo: ARDemo
+    let onTap: () -> Void
     
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 30))
-                .foregroundColor(color)
-            
-            Text(title)
-                .font(.headline)
-                .multilineTextAlignment(.center)
-            
-            Text(description)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+        Button(action: onTap) {
+            VStack(spacing: 12) {
+                Image(systemName: demo.icon)
+                    .font(.system(size: 30))
+                    .foregroundColor(demo.color)
+                
+                Text(demo.title)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                
+                Text(demo.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.regularMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(.quaternary, lineWidth: 1)
+            )
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.regularMaterial)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(.quaternary, lineWidth: 1)
-        )
+        .buttonStyle(.plain)
+    }
+}
+
+struct ARDemoView: View {
+    let demo: ARDemo
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                Image(systemName: demo.icon)
+                    .font(.system(size: 80))
+                    .foregroundColor(demo.color)
+                
+                Text(demo.title)
+                    .font(.largeTitle)
+                    .bold()
+                
+                Text(demo.description)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                
+                VStack(spacing: 16) {
+                    Button("Start AR Experience") {
+                        // TODO: Launch actual AR experience
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    
+                    Button("View 3D Model") {
+                        // TODO: Show 3D model viewer
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
+                
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("AR Demo")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 
