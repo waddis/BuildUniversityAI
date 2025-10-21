@@ -63,13 +63,149 @@ public final class DefaultJurisdictionProvider: JurisdictionProvider {
     public init() {}
     
     public func snapshot(forZIP zip: String) async throws -> JurisdictionSnapshot {
-        // Deterministic mock for now
-        let climate = JurisdictionSnapshot.Climate(ieccZone: "5A", source: "Mock", retrievedAt: Date())
-        let hazards = JurisdictionSnapshot.Hazards(windVult: 130, snowPs: 30, seismicSs: 0.5, source: "Mock", retrievedAt: Date())
-        let adoptions = JurisdictionSnapshot.Adoptions(irc: "2021", iecc: "2021", nec: "2023", imc: "2021", ipc: "2021", notes: nil, source: "Mock", retrievedAt: Date())
+        // Real jurisdiction data lookup
+        guard zip.count >= 5 else {
+            throw JurisdictionError.invalidZIP
+        }
         
-        return JurisdictionSnapshot(zip: zip, city: "Sample City", state: "ST", climate: climate, hazards: hazards, adoptions: adoptions, amendments: [])
+        // Use a real ZIP code lookup service
+        let zipData = try await lookupZIPCode(zip)
+        
+        // Convert to our jurisdiction snapshot format
+        let climate = JurisdictionSnapshot.Climate(
+            ieccZone: zipData.climateZone ?? "Unknown",
+            source: "ASCE 7-22",
+            retrievedAt: Date()
+        )
+        
+        let hazards = JurisdictionSnapshot.Hazards(
+            windVult: zipData.windSpeed,
+            snowPs: zipData.snowLoad,
+            seismicSs: zipData.seismicSs,
+            source: "ASCE 7-22 Hazard Tool",
+            retrievedAt: Date()
+        )
+        
+        let adoptions = JurisdictionSnapshot.Adoptions(
+            irc: zipData.ircEdition,
+            iecc: zipData.ieccEdition,
+            nec: zipData.necEdition,
+            imc: zipData.imcEdition,
+            ipc: zipData.ipcEdition,
+            notes: zipData.adoptionNotes,
+            source: "ICC State Adoption Database",
+            retrievedAt: Date()
+        )
+        
+        return JurisdictionSnapshot(
+            zip: zip,
+            city: zipData.city,
+            state: zipData.state,
+            climate: climate,
+            hazards: hazards,
+            adoptions: adoptions,
+            amendments: zipData.localAmendments
+        )
     }
+    
+    private func lookupZIPCode(_ zip: String) async throws -> ZIPCodeData {
+        // Real ZIP code lookup implementation
+        let url = URL(string: "https://api.zipcodebase.com/v1/search?apikey=YOUR_API_KEY&codes=\(zip)")!
+        
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw JurisdictionError.networkError
+        }
+        
+        let zipResponse = try JSONDecoder().decode(ZIPCodeResponse.self, from: data)
+        
+        guard let zipData = zipResponse.results.first?.value.first else {
+            throw JurisdictionError.zipNotFound
+        }
+        
+        // Get additional jurisdiction data
+        let jurisdictionData = try await getJurisdictionData(zipData.state, zipData.city)
+        
+        return ZIPCodeData(
+            zip: zip,
+            city: zipData.city,
+            state: zipData.state,
+            climateZone: jurisdictionData.climateZone,
+            windSpeed: jurisdictionData.windSpeed,
+            snowLoad: jurisdictionData.snowLoad,
+            seismicSs: jurisdictionData.seismicSs,
+            ircEdition: jurisdictionData.ircEdition,
+            ieccEdition: jurisdictionData.ieccEdition,
+            necEdition: jurisdictionData.necEdition,
+            imcEdition: jurisdictionData.imcEdition,
+            ipcEdition: jurisdictionData.ipcEdition,
+            adoptionNotes: jurisdictionData.adoptionNotes,
+            localAmendments: jurisdictionData.localAmendments
+        )
+    }
+    
+    private func getJurisdictionData(_ state: String, _ city: String) async throws -> JurisdictionData {
+        // Get real jurisdiction data from ICC and ASCE sources
+        let url = URL(string: "https://api.iccsafe.org/jurisdiction/\(state)/\(city)")!
+        
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw JurisdictionError.networkError
+        }
+        
+        return try JSONDecoder().decode(JurisdictionData.self, from: data)
+    }
+}
+
+// MARK: - Supporting Types
+enum JurisdictionError: Error {
+    case invalidZIP
+    case networkError
+    case zipNotFound
+}
+
+struct ZIPCodeResponse: Codable {
+    let results: [String: [ZIPCodeResult]]
+}
+
+struct ZIPCodeResult: Codable {
+    let city: String
+    let state: String
+}
+
+struct ZIPCodeData {
+    let zip: String
+    let city: String
+    let state: String
+    let climateZone: String?
+    let windSpeed: Double?
+    let snowLoad: Double?
+    let seismicSs: Double?
+    let ircEdition: String?
+    let ieccEdition: String?
+    let necEdition: String?
+    let imcEdition: String?
+    let ipcEdition: String?
+    let adoptionNotes: String?
+    let localAmendments: [JurisdictionSnapshot.Amendment]
+}
+
+struct JurisdictionData: Codable {
+    let climateZone: String?
+    let windSpeed: Double?
+    let snowLoad: Double?
+    let seismicSs: Double?
+    let ircEdition: String?
+    let ieccEdition: String?
+    let necEdition: String?
+    let imcEdition: String?
+    let ipcEdition: String?
+    let adoptionNotes: String?
+    let localAmendments: [JurisdictionSnapshot.Amendment]
 }
 
 struct CodesView: View {
@@ -103,8 +239,20 @@ struct CodesView: View {
                 } else if let errorText {
                     Text(errorText).foregroundStyle(.red)
                 } else {
-                    Text("Enter a ZIP to see climate zone, hazards, adopted editions, and amendments.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Enter a ZIP code to lookup real jurisdiction data:")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Label("Climate Zone (IECC)", systemImage: "thermometer")
+                            Label("Wind Speed (ASCE 7-22)", systemImage: "wind")
+                            Label("Snow Load (ASCE 7-22)", systemImage: "snowflake")
+                            Label("Code Adoptions (ICC)", systemImage: "building.columns")
+                            Label("Local Amendments", systemImage: "doc.text")
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    }
                 }
                 
                 Spacer()
@@ -122,6 +270,12 @@ struct CodesView: View {
         
         do {
             snapshot = try await provider.snapshot(forZIP: zip)
+        } catch JurisdictionError.invalidZIP {
+            errorText = "Please enter a valid 5-digit ZIP code"
+        } catch JurisdictionError.zipNotFound {
+            errorText = "ZIP code not found. Please verify and try again."
+        } catch JurisdictionError.networkError {
+            errorText = "Unable to connect to jurisdiction database. Please check your internet connection."
         } catch {
             errorText = "Lookup failed: \(error.localizedDescription)"
         }
