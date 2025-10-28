@@ -175,7 +175,8 @@ fileprivate struct RoofSceneView: UIViewRepresentable {
         view.backgroundColor = UIColor.systemBackground
         view.allowsCameraControl = true
         view.autoenablesDefaultLighting = true
-        view.antialiasingMode = .multisampling4X
+        view.antialiasingMode = .multisampling2X
+        view.preferredFramesPerSecond = 30
 
         let scene = SCNScene()
         view.scene = scene
@@ -440,7 +441,7 @@ fileprivate struct RoofSceneView: UIViewRepresentable {
         labelNode.name = "Label"
         let geo = SCNText(string: text, extrusionDepth: 0.001)
         geo.font = UIFont.systemFont(ofSize: 0.12, weight: .bold)
-        geo.flatness = 0.2
+        geo.flatness = 0.6
         geo.firstMaterial = {
             let m = SCNMaterial()
             m.diffuse.contents = color

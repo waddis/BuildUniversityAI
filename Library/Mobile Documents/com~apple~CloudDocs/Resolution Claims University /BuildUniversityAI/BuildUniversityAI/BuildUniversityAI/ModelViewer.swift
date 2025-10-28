@@ -151,7 +151,8 @@ enum ModelResolver {
             }
 
             // Download and cache
-            let request = URLRequest(url: remoteURL, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData)
+            // Use standard HTTP caching policy to avoid bypassing caches
+            let request = URLRequest(url: remoteURL, cachePolicy: .useProtocolCachePolicy, timeoutInterval: 30)
             URLSession.shared.downloadTask(with: request) { tempURL, response, error in
                 if let error = error {
                     completion(.failure(error))

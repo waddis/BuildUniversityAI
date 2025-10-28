@@ -20,8 +20,8 @@ struct MediaTile: View {
         VStack(alignment: .leading, spacing: 6) {
             switch media.kind {
             case .imageAsset:
-                if UIImage(named: media.nameOrURL) != nil {
-                    Image(media.nameOrURL)
+                if let ui = UIImage(named: media.nameOrURL) {
+                    Image(uiImage: ui)
                         .resizable().scaledToFill()
                         .frame(height: 140).clipShape(RoundedRectangle(cornerRadius: 12))
                 } else {
