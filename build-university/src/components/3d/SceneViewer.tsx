@@ -1,0 +1,469 @@
+'use client'
+
+import { useEffect, useRef } from 'react'
+import * as THREE from 'three'
+import type { CameraPreset } from '@/types'
+import { generateComplexHouse } from '@/lib/3d/complex-house'
+
+interface SceneViewerProps {
+  cameraPreset?: CameraPreset | null
+  highlightedGroups?: string[]
+  hiddenGroups?: string[]
+  onMeshClick?: (meshKey: string) => void
+  explodedOffset?: number
+}
+
+interface MeshEntry {
+  mesh: THREE.Mesh
+  group: string
+  meshKey: string
+  baseY: number
+  explodeOrder: number
+  originalColor: THREE.Color | null
+}
+
+const HIGHLIGHT_COLOR = new THREE.Color(0x2563eb)  // blue-600 to match UI accent
+
+// Cinematic ease — slow start, smooth middle, gentle settle
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+}
+
+function smootherp(current: number, target: number, rate: number, dt: number): number {
+  const t = 1 - Math.pow(1 - rate, dt * 60)
+  return current + (target - current) * t
+}
+
+function lerpVec3(v: THREE.Vector3, target: THREE.Vector3, rate: number, dt: number) {
+  v.x = smootherp(v.x, target.x, rate, dt)
+  v.y = smootherp(v.y, target.y, rate, dt)
+  v.z = smootherp(v.z, target.z, rate, dt)
+}
+
+export default function SceneViewer({
+  cameraPreset,
+  highlightedGroups,
+  hiddenGroups,
+  onMeshClick,
+  explodedOffset = 0,
+}: SceneViewerProps) {
+  const mountRef = useRef<HTMLDivElement>(null)
+  const internalsRef = useRef<{
+    camera: THREE.PerspectiveCamera
+    renderer: THREE.WebGLRenderer
+    meshes: MeshEntry[]
+    targetCamPos: THREE.Vector3
+    targetCamTarget: THREE.Vector3
+    targetFov: number
+    isTransitioning: boolean
+    transitionStart: number
+    transitionDuration: number
+    startCamPos: THREE.Vector3
+    startCamTarget: THREE.Vector3
+    startFov: number
+    userInteracting: boolean
+    lastInteraction: number
+    controls: { update: () => void; target: THREE.Vector3; dispose: () => void; enabled: boolean } | null
+  } | null>(null)
+
+  const onClickRef = useRef(onMeshClick)
+  onClickRef.current = onMeshClick
+  const highlightedRef = useRef(highlightedGroups)
+  highlightedRef.current = highlightedGroups
+  const hiddenRef = useRef(hiddenGroups)
+  hiddenRef.current = hiddenGroups
+  const explodeRef = useRef(explodedOffset)
+  explodeRef.current = explodedOffset
+
+  // Camera preset changes trigger cinematic transition
+  useEffect(() => {
+    if (!cameraPreset || !internalsRef.current) return
+    const r = internalsRef.current
+    // Store start state for curve interpolation
+    r.startCamPos = r.camera.position.clone()
+    r.startCamTarget = r.controls ? r.controls.target.clone() : new THREE.Vector3(1, -1, 0)
+    r.startFov = r.camera.fov
+    r.targetCamPos.set(...cameraPreset.position)
+    r.targetCamTarget.set(...cameraPreset.target)
+    r.targetFov = cameraPreset.fov ?? 35
+    // Compute duration based on distance — farther moves take longer
+    const dist = r.startCamPos.distanceTo(r.targetCamPos)
+    r.transitionDuration = Math.min(Math.max(dist * 0.06, 0.8), 2.5) // 0.8s–2.5s
+    r.isTransitioning = true
+    r.transitionStart = performance.now()
+    if (r.controls) r.controls.enabled = false
+  }, [cameraPreset])
+
+  useEffect(() => {
+    const mount = mountRef.current
+    if (!mount) return
+
+    const w = mount.clientWidth || window.innerWidth
+    const h = mount.clientHeight || window.innerHeight
+
+    // Renderer — high quality architectural visualization
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' })
+    renderer.setSize(w, h)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.VSMShadowMap
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.3
+    mount.appendChild(renderer.domElement)
+
+    const isWebGL2 = renderer.capabilities.isWebGL2
+
+    const scene = new THREE.Scene()
+
+    // Sky dome — realistic gradient from blue sky to horizon haze
+    const skyC = document.createElement('canvas'); skyC.width = 512; skyC.height = 512
+    const skyCtx = skyC.getContext('2d')!
+    const skyGr = skyCtx.createLinearGradient(0, 0, 0, 512)
+    skyGr.addColorStop(0, '#5B8EC9')     // zenith — medium blue
+    skyGr.addColorStop(0.3, '#8CB4D8')   // upper sky
+    skyGr.addColorStop(0.55, '#B8D4E8')  // mid sky
+    skyGr.addColorStop(0.75, '#D6E6F0')  // lower sky
+    skyGr.addColorStop(0.9, '#E8EEF2')   // horizon haze
+    skyGr.addColorStop(1.0, '#EFF2F4')   // ground blend
+    skyCtx.fillStyle = skyGr; skyCtx.fillRect(0, 0, 512, 512)
+    const skyTex = new THREE.CanvasTexture(skyC)
+    const skyDome = new THREE.Mesh(
+      new THREE.SphereGeometry(120, 32, 16),
+      new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide })
+    )
+    scene.add(skyDome)
+
+    scene.fog = new THREE.Fog(0xdde6ee, 50, 130)
+
+    const camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 300)
+    camera.position.set(28, 16, 26)
+
+    // Environment map for reflections (procedural cubemap from canvas)
+    // PMREMGenerator requires WebGL2 for proper rendering
+    let envMap: THREE.Texture | null = null
+    if (isWebGL2) {
+      const pmremGen = new THREE.PMREMGenerator(renderer)
+      const envScene = new THREE.Scene()
+      envScene.add(new THREE.HemisphereLight(0x88bbee, 0xc8d4cc, 1.0))
+      envScene.add(new THREE.AmbientLight(0xffffff, 0.5))
+      envMap = pmremGen.fromScene(envScene, 0, 0.1, 100).texture
+      scene.environment = envMap
+      pmremGen.dispose()
+    }
+
+    // Sunlight — warm afternoon, casts realistic shadows
+    const sun = new THREE.DirectionalLight(0xfff4e8, 2.5)
+    sun.position.set(20, 35, 15)
+    sun.castShadow = true
+    sun.shadow.mapSize.setScalar(4096)
+    sun.shadow.camera.left = -30; sun.shadow.camera.right = 30
+    sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30
+    sun.shadow.bias = -0.0001; sun.shadow.radius = 2
+    sun.shadow.normalBias = 0.03
+    scene.add(sun)
+
+    // Sky fill — cool blue to simulate sky bounce
+    const skyFill = new THREE.DirectionalLight(0x8aacc8, 0.8)
+    skyFill.position.set(-15, 20, -10)
+    scene.add(skyFill)
+
+    // Ground bounce — warm reflected light from below
+    const bounce = new THREE.DirectionalLight(0xe8dcc8, 0.3)
+    bounce.position.set(0, -5, 0)
+    scene.add(bounce)
+
+    // Hemisphere — sky vs ground ambient
+    scene.add(new THREE.HemisphereLight(0xc8daea, 0x94a484, 0.6))
+    scene.add(new THREE.AmbientLight(0xffffff, 0.25))
+
+    // Ground — realistic grass/dirt texture
+    const groundC = document.createElement('canvas'); groundC.width = 1024; groundC.height = 1024
+    const gCtx = groundC.getContext('2d')!
+    // Base green
+    gCtx.fillStyle = '#5a8a3a'; gCtx.fillRect(0, 0, 1024, 1024)
+    // Mow stripes
+    for (let sy = 0; sy < 1024; sy += 60) {
+      gCtx.fillStyle = sy % 120 < 60 ? 'rgba(70,140,50,0.08)' : 'rgba(40,100,25,0.06)'
+      gCtx.fillRect(0, sy, 1024, 60)
+    }
+    // Grass blades
+    for (let i = 0; i < 15000; i++) {
+      const v = 40 + Math.random() * 50 | 0
+      gCtx.fillStyle = `rgba(${v},${90 + Math.random()*60|0},${15 + Math.random()*20|0},${0.2 + Math.random()*0.3})`
+      gCtx.fillRect(Math.random() * 1024, Math.random() * 1024, 1, 2 + Math.random() * 5)
+    }
+    // Bare patches near house
+    gCtx.fillStyle = 'rgba(140,120,80,0.08)'
+    gCtx.fillRect(400, 400, 250, 200)
+    const groundTex = new THREE.CanvasTexture(groundC)
+    groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping
+    groundTex.repeat.set(12, 12)
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(200, 200),
+      new THREE.MeshStandardMaterial({ map: groundTex, roughness: 0.95, envMapIntensity: 0.1 })
+    )
+    ground.rotation.x = -Math.PI / 2
+    ground.position.y = -5
+    ground.receiveShadow = true
+    scene.add(ground)
+
+    // Subtle construction grid (lighter, recedes)
+    const grid = new THREE.GridHelper(50, 50, 0xc0c8c0, 0xd0d8d0)
+    grid.position.y = -4.98
+    grid.material.opacity = 0.3
+    grid.material.transparent = true
+    scene.add(grid)
+
+    // House model
+    const meshes: MeshEntry[] = []
+    const houseParts = generateComplexHouse(isWebGL2)
+    houseParts.forEach(def => {
+      const mesh = new THREE.Mesh(def.geometry, def.material)
+      mesh.position.set(...def.position)
+      if (def.rotation) mesh.rotation.set(...def.rotation)
+      if (def.castShadow) mesh.castShadow = true
+      if (def.receiveShadow) mesh.receiveShadow = true
+      scene.add(mesh)
+      const origColor = (def.material instanceof THREE.MeshStandardMaterial) ? def.material.color.clone() : null
+      meshes.push({ mesh, group: def.group, meshKey: def.meshKey, baseY: def.position[1], explodeOrder: def.explodeOrder, originalColor: origColor })
+    })
+
+    // Apply initial visibility IMMEDIATELY (before animation loop starts)
+    const initHidden = hiddenRef.current
+    const initHighlighted = highlightedRef.current
+    const initHasHighlight = initHighlighted && initHighlighted.length > 0
+    meshes.forEach(entry => {
+      const isHidden = initHidden?.includes(entry.group)
+      const isActive = initHasHighlight && initHighlighted!.includes(entry.group)
+      entry.mesh.visible = !isHidden
+      const mat = entry.mesh.material
+      if (mat instanceof THREE.MeshStandardMaterial) {
+        if (isHidden) {
+          mat.opacity = 0; mat.transparent = true
+        } else if (isActive) {
+          mat.emissive = HIGHLIGHT_COLOR; mat.emissiveIntensity = 0.25
+        } else if (initHasHighlight) {
+          mat.opacity = 0.15; mat.transparent = true
+          if (entry.originalColor) mat.color.copy(entry.originalColor).lerp(new THREE.Color(0xd0d0d8), 0.7)
+        }
+      }
+    })
+
+    const houseCenter = new THREE.Vector3(1, -1, 0)
+    const targetCamPos = new THREE.Vector3(28, 16, 26)
+    const targetCamTarget = houseCenter.clone()
+
+    internalsRef.current = {
+      camera, renderer, meshes, targetCamPos, targetCamTarget,
+      targetFov: 35,
+      isTransitioning: false, transitionStart: 0, transitionDuration: 1.5,
+      startCamPos: camera.position.clone(),
+      startCamTarget: houseCenter.clone(),
+      startFov: 35,
+      userInteracting: false, lastInteraction: 0,
+      controls: null,
+    }
+
+    // Click handler
+    const handleClick = (e: MouseEvent) => {
+      if (!onClickRef.current || !internalsRef.current) return
+      const rect = renderer.domElement.getBoundingClientRect()
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      )
+      const raycaster = new THREE.Raycaster()
+      raycaster.setFromCamera(mouse, camera)
+      const hits = raycaster.intersectObjects(meshes.map(m => m.mesh))
+      if (hits.length > 0) {
+        const entry = meshes.find(m => m.mesh === hits[0].object)
+        if (entry) onClickRef.current(entry.meshKey)
+      }
+    }
+    renderer.domElement.addEventListener('click', handleClick)
+
+    // Track user interaction to pause idle drift
+    const markInteraction = () => {
+      if (internalsRef.current) {
+        internalsRef.current.userInteracting = true
+        internalsRef.current.lastInteraction = performance.now()
+      }
+    }
+    const clearInteraction = () => {
+      if (internalsRef.current) internalsRef.current.userInteracting = false
+    }
+    renderer.domElement.addEventListener('pointerdown', markInteraction)
+    renderer.domElement.addEventListener('pointerup', clearInteraction)
+    renderer.domElement.addEventListener('wheel', markInteraction)
+
+    // Animation
+    let orbitCleanup: (() => void) | null = null
+    const frameRef = { current: 0 }
+    let lastTime = performance.now()
+
+    ;(async () => {
+      try {
+        const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js')
+        const oc = new OrbitControls(camera, renderer.domElement)
+        oc.enableDamping = true; oc.dampingFactor = 0.06
+        oc.minDistance = 4; oc.maxDistance = 80
+        oc.maxPolarAngle = Math.PI / 2.05
+        oc.target.copy(houseCenter)
+        oc.update()
+        internalsRef.current!.controls = oc
+        orbitCleanup = () => oc.dispose()
+
+        const animate = () => {
+          frameRef.current = requestAnimationFrame(animate)
+          const now = performance.now()
+          const dt = Math.min((now - lastTime) / 1000, 0.05)
+          lastTime = now
+
+          const r = internalsRef.current!
+
+          // ── Cinematic camera transition ──
+          if (r.isTransitioning) {
+            const elapsed = (now - r.transitionStart) / 1000
+            const rawT = Math.min(elapsed / r.transitionDuration, 1)
+            const t = easeInOutCubic(rawT) // smooth S-curve
+
+            // Interpolate position, target, FOV
+            camera.position.lerpVectors(r.startCamPos, targetCamPos, t)
+            oc.target.lerpVectors(r.startCamTarget, targetCamTarget, t)
+            camera.fov = r.startFov + (r.targetFov - r.startFov) * t
+            camera.updateProjectionMatrix()
+
+            if (rawT >= 1) {
+              r.isTransitioning = false
+              oc.enabled = true
+            }
+          }
+
+          // ── Idle drift — slow orbit when user isn't interacting ──
+          if (!r.isTransitioning && !r.userInteracting) {
+            const idleDelay = 3000 // 3s after last interaction
+            if (now - r.lastInteraction > idleDelay) {
+              // Very slow orbit around target
+              const driftSpeed = 0.08 * dt // degrees per frame
+              const radius = camera.position.distanceTo(oc.target)
+              const angle = Math.atan2(camera.position.z - oc.target.z, camera.position.x - oc.target.x)
+              const newAngle = angle + driftSpeed * Math.PI / 180
+              camera.position.x = oc.target.x + Math.cos(newAngle) * radius
+              camera.position.z = oc.target.z + Math.sin(newAngle) * radius
+            }
+          }
+
+          // ── Visibility, highlight glow, explode ──
+          const hidden = hiddenRef.current
+          const highlighted = highlightedRef.current
+          const explode = explodeRef.current
+          const hasHighlight = highlighted && highlighted.length > 0
+
+          // Pulse: gentle sine breathing for highlighted elements
+          const pulseT = (Math.sin(now * 0.004) + 1) / 2
+          const pulseIntensity = 0.15 + pulseT * 0.35  // stronger for light bg
+
+          meshes.forEach(entry => {
+            const isHidden = hidden?.includes(entry.group)
+            const isActiveTarget = hasHighlight && highlighted!.includes(entry.group)
+
+            entry.mesh.visible = !isHidden
+
+            const mat = entry.mesh.material
+            if (mat instanceof THREE.MeshStandardMaterial) {
+              if (isHidden) {
+                mat.opacity = 0
+                mat.transparent = true
+              } else if (isActiveTarget) {
+                // HIGHLIGHTED: full color + pulsing blue glow
+                mat.opacity = 1
+                mat.transparent = false
+                mat.emissive = HIGHLIGHT_COLOR
+                mat.emissiveIntensity = pulseIntensity
+                if (entry.originalColor) {
+                  mat.color.copy(entry.originalColor)
+                }
+              } else if (hasHighlight) {
+                // DIMMED: faded, desaturated toward light grey (not black)
+                mat.opacity = 0.15
+                mat.transparent = true
+                mat.emissive = mat.emissive || new THREE.Color()
+                mat.emissive.setHex(0x000000)
+                mat.emissiveIntensity = 0
+                if (entry.originalColor) {
+                  mat.color.copy(entry.originalColor).lerp(new THREE.Color(0xd0d0d8), 0.7)
+                }
+              } else {
+                // NORMAL: original appearance
+                mat.opacity = 1
+                mat.transparent = false
+                mat.emissive = mat.emissive || new THREE.Color()
+                mat.emissive.setHex(0x000000)
+                mat.emissiveIntensity = 0
+                if (entry.originalColor) mat.color.copy(entry.originalColor)
+              }
+            }
+            entry.mesh.position.y = entry.baseY + entry.explodeOrder * explode
+          })
+
+          oc.update()
+          renderer.render(scene, camera)
+        }
+        animate()
+      } catch {
+        const animate = () => {
+          frameRef.current = requestAnimationFrame(animate)
+          renderer.render(scene, camera)
+        }
+        animate()
+      }
+    })()
+
+    const handleResize = () => {
+      if (!mount) return
+      const nw = mount.clientWidth || 1
+      const nh = mount.clientHeight || 1
+      camera.aspect = nw / nh; camera.updateProjectionMatrix()
+      renderer.setSize(nw, nh)
+    }
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      cancelAnimationFrame(frameRef.current)
+      window.removeEventListener('resize', handleResize)
+      renderer.domElement.removeEventListener('click', handleClick)
+      renderer.domElement.removeEventListener('pointerdown', markInteraction)
+      renderer.domElement.removeEventListener('pointerup', clearInteraction)
+      renderer.domElement.removeEventListener('wheel', markInteraction)
+      orbitCleanup?.()
+
+      // Dispose all mesh geometries and materials to prevent GPU memory leaks
+      scene.traverse((obj) => {
+        if (obj instanceof THREE.Mesh) {
+          obj.geometry?.dispose()
+          const mat = obj.material
+          if (Array.isArray(mat)) {
+            mat.forEach((m) => m.dispose())
+          } else if (mat) {
+            mat.dispose()
+          }
+        }
+      })
+
+      // Dispose canvas textures
+      skyTex.dispose()
+      groundTex.dispose()
+
+      // Dispose environment map
+      if (envMap) envMap.dispose()
+
+      scene.clear()
+      renderer.dispose()
+      if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
+}
