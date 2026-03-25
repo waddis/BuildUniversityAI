@@ -23,9 +23,9 @@ const PHASE_INFO: Record<string, { title: string; description: string; moduleCou
 export default function LearnPage() {
   return (
     <div className="min-h-screen px-6 py-12 max-w-5xl mx-auto">
-      <Link href="/" className="text-white/30 hover:text-white/60 text-sm mb-8 inline-block">&larr; Home</Link>
+      <Link href="/" className="text-[#e5e2e1]/30 hover:text-[#e5e2e1]/60 text-sm mb-8 inline-block">&larr; Home</Link>
       <h1 className="text-3xl font-bold mb-2">Construction Phases</h1>
-      <p className="text-white/40 mb-10">Follow the real build sequence from ground to finish</p>
+      <p className="text-[#e5e2e1]/40 mb-10">Follow the real build sequence from ground to finish</p>
 
       <div className="space-y-3">
         {CONSTRUCTION_PHASES.map((phase, i) => {
@@ -35,27 +35,28 @@ export default function LearnPage() {
             <Link
               key={phase}
               href={hasContent ? `/learn/${phase}` : '#'}
-              className={`block bg-white/3 border rounded-xl p-5 transition-colors ${
+              className={`block bg-[#201f1f] rounded-xl p-5 transition-colors ${
                 hasContent
-                  ? 'border-white/10 hover:border-amber-500/30 hover:bg-white/5 cursor-pointer'
-                  : 'border-white/5 opacity-40 cursor-default'
+                  ? 'hover:bg-[#2a2a2a] cursor-pointer'
+                  : 'opacity-40 cursor-default'
               }`}
+              style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}
             >
               <div className="flex items-center gap-4">
-                <div className="text-amber-500/60 font-mono text-sm w-8">
+                <div className="text-[#FF8C00]/60 font-mono text-sm w-8">
                   {String(i + 1).padStart(2, '0')}
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold">{info.title}</div>
-                  <div className="text-white/40 text-sm">{info.description}</div>
+                  <div className="text-[#e5e2e1]/40 text-sm">{info.description}</div>
                 </div>
                 <div className="text-right">
                   {hasContent ? (
-                    <span className="text-xs bg-amber-500/10 text-amber-500 px-2 py-1 rounded-full">
+                    <span className="text-xs bg-[#FF8C00]/10 text-[#FF8C00] px-2 py-1 rounded-full">
                       {info.moduleCount} module{info.moduleCount !== 1 ? 's' : ''}
                     </span>
                   ) : (
-                    <span className="text-xs text-white/20">Coming soon</span>
+                    <span className="text-xs text-[#e5e2e1]/20">Coming soon</span>
                   )}
                 </div>
               </div>

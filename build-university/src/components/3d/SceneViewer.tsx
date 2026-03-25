@@ -39,7 +39,7 @@ interface MeshEntry {
   originalMaterial: THREE.Material | null
 }
 
-const HIGHLIGHT_COLOR = new THREE.Color(0x2563eb)  // blue-600 to match UI accent
+const HIGHLIGHT_COLOR = new THREE.Color(0xFF8C00)  // construction orange to match UI
 
 // Cinematic ease — slow start, smooth middle, gentle settle
 function easeInOutCubic(t: number): number {

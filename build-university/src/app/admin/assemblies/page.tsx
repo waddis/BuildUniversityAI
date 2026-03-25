@@ -43,16 +43,16 @@ export default function AssembliesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">Assemblies</h1>
-          <p className="text-white/40 text-sm">Building components with mesh keys and install order</p>
+          <p className="text-[#e5e2e1]/40 text-sm">Building components with mesh keys and install order</p>
         </div>
         <button onClick={() => { setForm(EMPTY); setEditing(null); setShowForm(s => !s) }}
-          className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+          className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
           {showForm ? 'Cancel' : '+ New Assembly'}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white/3 border border-white/8 rounded-xl p-5 mb-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-[#201f1f] rounded-xl p-5 mb-6 space-y-4" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Slug" name="slug" value={form.slug} onChange={handleChange} required placeholder="valley-metal" />
             <FormField label="Name" name="name" value={form.name} onChange={handleChange} required placeholder="Valley Metal Flashing" />
@@ -71,7 +71,7 @@ export default function AssembliesPage() {
           {models.length > 0 && (
             <FormField label="House Model Version" name="house_model_version_id" value={form.house_model_version_id ?? ''} onChange={handleChange} placeholder="UUID of model version" />
           )}
-          <button type="submit" className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+          <button type="submit" className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
             {editing ? 'Update' : 'Create'}
           </button>
         </form>
@@ -80,10 +80,10 @@ export default function AssembliesPage() {
       <AdminTable
         columns={[
           { key: 'name', label: 'Name' },
-          { key: 'system', label: 'System', render: (r: Assembly) => <span className="text-xs capitalize bg-white/5 px-2 py-0.5 rounded-full">{r.system}</span> },
+          { key: 'system', label: 'System', render: (r: Assembly) => <span className="text-xs capitalize bg-[#2a2a2a] px-2 py-0.5 rounded-full">{r.system}</span> },
           { key: 'phase', label: 'Phase', render: (r: Assembly) => <span className="text-xs capitalize">{r.phase.replace(/_/g, ' ')}</span> },
           { key: 'category', label: 'Category', render: (r: Assembly) => <span className="text-xs capitalize">{r.category}</span> },
-          { key: 'mesh_key', label: 'Mesh Key', render: (r: Assembly) => r.mesh_key ? <code className="text-amber-500/60 text-xs">{r.mesh_key}</code> : <span className="text-white/20">—</span> },
+          { key: 'mesh_key', label: 'Mesh Key', render: (r: Assembly) => r.mesh_key ? <code className="text-[#FF8C00]/60 text-xs">{r.mesh_key}</code> : <span className="text-[#e5e2e1]/20">--</span> },
           { key: 'install_order', label: 'Order' },
         ]}
         rows={rows}

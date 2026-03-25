@@ -1,10 +1,10 @@
 # BuildRight 3D — CLAUDE.md
-*Last updated: 2026-03-23 (session 2 — BIM editor pivot) — update this header every session*
+*Last updated: 2026-03-24 — dark theme audit cleanup, CLAUDE.md rewrite*
 
 ## What This Project Is
-BuildRight 3D is a parametric BIM editor + construction training platform. The building model is data-driven (Building > Level > Zone > Wall > Slab > Opening > Roof), geometry is derived from parameters, and every change is undoable. The same engine powers both **editing** (create/modify buildings) and **training** (step-by-step construction lessons, inspection challenges, quizzes).
+BuildRight 3D is a 3D construction training platform. Users learn how buildings are constructed through interactive 3D lessons, inspection challenges, and quizzes — all tied to real building code (IRC/IBC/ASCE/ASTM) and real construction sequencing.
 
-**This is not a static 3D viewer. It is a parametric building editor that also teaches construction.**
+**This is NOT an editor or BIM tool. It is a training platform that teaches construction through a fully interactive 3D house.**
 
 **Goal: $100M exit. Built by William Addis + Claude.**
 
@@ -26,9 +26,9 @@ Every lesson answers five questions:
 ## Business Model
 | Tier | Price | Seats |
 |------|-------|-------|
-| Crew | $19/mo | 1 |
-| Company | $149/mo | 10 |
-| Enterprise | $499/mo | Unlimited |
+| Crew | $49/mo | 1 |
+| Company | $199/mo | 10 |
+| Enterprise | Custom | Unlimited |
 
 14-day free trial. Stripe subscriptions.
 
@@ -41,7 +41,7 @@ Every lesson answers five questions:
 - **3D:** Three.js + React Three Fiber v9 + Drei
 - **PDF:** jsPDF
 - **Animations:** Framer Motion
-- **Jurisdiction:** Custom geospatial service (ZIP → climate zone + wind + snow + code adoption)
+- **Jurisdiction:** Custom geospatial service (ZIP -> climate zone + wind + snow + code adoption)
 
 ## User Modes
 - **Learn:** Guided step-by-step instruction through 3D model
@@ -51,7 +51,7 @@ Every lesson answers five questions:
 - **Exploded Systems:** Separate house into systems (structure, sheathing, flashings, etc.)
 
 ## Construction Phases (ordered)
-1. site_prep → 2. excavation → 3. foundation → 4. framing_floor → 5. framing_walls → 6. framing_roof → 7. sheathing → 8. dry_in → 9. windows_doors → 10. wrb_cladding → 11. mep_rough → 12. insulation → 13. drywall_finishes → 14. final_inspection
+1. site_prep -> 2. excavation -> 3. foundation -> 4. framing_floor -> 5. framing_walls -> 6. framing_roof -> 7. sheathing -> 8. dry_in -> 9. windows_doors -> 10. wrb_cladding -> 11. mep_rough -> 12. insulation -> 13. drywall_finishes -> 14. final_inspection
 
 ## MVP Scope: Complex Roof + Envelope Academy
 **One flagship complex house** (multiple gables, valleys, dormers, turret, porch tie-ins, garage, chimney intersection, dead-valley risk areas, multiple pitches, realistic drainage challenges).
@@ -86,52 +86,77 @@ Every lesson answers five questions:
 ## Project Structure
 ```
 src/
-  core/                              # BIM ENGINE (parametric source of truth)
-    schema/types.ts                  # Data model: Building>Level>Zone>Wall>Slab>Opening>Roof>Assembly
-    schema/defaults.ts               # Default building factory (30x24 rectangle, 4 walls)
-    commands/types.ts                # Command pattern: AddNode, RemoveNode, UpdateNode, MoveWallEndpoint
-    stores/sceneStore.ts             # Zustand: scene graph, undo/redo (50-deep), selection
-    stores/viewerStore.ts            # Zustand: camera, display mode (stacked/exploded/solo), wireframe, x-ray
-    stores/editorStore.ts            # Zustand: active tool, panel state, snap, training mode
-    geometry/wallGeometry.ts         # Derive Three.js geometry from parametric Wall + Level
-    geometry/slabGeometry.ts         # Derive Three.js geometry from parametric Slab + Level
-  viewer/                            # 3D RENDERING (React Three Fiber)
-    canvas/SceneCanvas.tsx           # R3F Canvas — lighting, grid, shadows, orbit, gizmo
-    renderers/SceneRenderer.tsx      # Renders scene graph: WallMesh, SlabMesh (selected/hovered state)
-    selection/SelectionManager.tsx   # Raycaster click/hover → Zustand selection
   app/
-    page.tsx                         # Landing page
-    
-    lesson/[slug]/page.tsx           # Lesson player (3D + steps + code refs)
-    inspect/[slug]/page.tsx          # Inspection challenge (find defects)
-    quiz/[slug]/page.tsx             # Quiz mode (MC + T/F + scoring)
-    learn/                           # Curriculum browser (phase → module → lesson)
-    admin/                           # Admin CMS (5 CRUD sections)
-    dashboard/page.tsx, login/page.tsx
-    api/                             # 7 API routes (Claude, Stripe, Jurisdiction, Exam)
+    page.tsx                           # Landing page
+    layout.tsx                         # Root layout
+    error.tsx                          # Error boundary
+    login/page.tsx                     # Login page
+    dashboard/page.tsx                 # User dashboard
+    lesson/[slug]/page.tsx             # Lesson player (3D + steps + code refs)
+    inspect/[slug]/page.tsx            # Inspection challenge (find defects)
+    quiz/[slug]/page.tsx               # Quiz mode (MC + T/F + scoring)
+    learn/                             # Curriculum browser (phase -> module -> lesson)
+      page.tsx
+      [phase]/page.tsx
+      [phase]/[module]/page.tsx
+    train/                             # Training flow
+      page.tsx, layout.tsx
+      [moduleSlug]/page.tsx
+      [moduleSlug]/[lessonSlug]/page.tsx, error.tsx
+    admin/                             # Admin CMS (5 CRUD sections)
+      layout.tsx, page.tsx
+      models/page.tsx
+      assemblies/page.tsx
+      lessons/page.tsx
+      code/page.tsx
+      failure-modes/page.tsx
+    commercial/page.tsx                # Commercial roofing content
+    damage/page.tsx, [id]/page.tsx     # Damage assessment
+    api/
+      claude/chat/route.ts             # Claude AI chat
+      claude/lesson/route.ts           # Claude AI lesson generation
+      exam/generate/route.ts           # AI exam generation
+      exam/grade/route.ts              # AI exam grading
+      jurisdiction/route.ts            # ZIP -> jurisdiction lookup
+      stitch/route.ts                  # Stitch UI generation
+      stripe/checkout/route.ts         # Stripe checkout
+      stripe/webhook/route.ts          # Stripe webhooks
   components/
-    editor/Toolbar.tsx               # Tool selector, add/delete, undo/redo, display modes, view toggles
-    editor/HierarchyTree.tsx         # Scene graph tree with selection + type icons
-    editor/Inspector.tsx             # Property editor for selected node (Wall, Level, generic)
-    ui/AdminTable.tsx, FormField.tsx  # Shared admin components
-    3d/SceneViewer.tsx               # Legacy Three.js viewer (lesson/inspect modes)
-    lesson/LessonPlayer.tsx          # Lesson orchestrator
-    lesson/StepPanel.tsx, StepTimeline.tsx, CodeDrawer.tsx, ViewerToolbar.tsx, QuizPanel.tsx
+    3d/
+      SceneViewer.tsx                  # Three.js 3D viewer (lesson/inspect modes)
+      CalloutOverlay.tsx               # 3D callout labels
+      DamageDetailViewer.tsx           # Damage visualization
+    lesson/
+      LessonPlayer.tsx                 # Lesson orchestrator
+      StepPanel.tsx                    # Step content panel
+      StepTimeline.tsx                 # Step navigation
+      CodeDrawer.tsx                   # Code reference drawer
+      ViewerToolbar.tsx                # Viewer controls toolbar
+      QuizPanel.tsx                    # Quiz engine
+    ui/
+      AdminTable.tsx                   # Reusable admin data table
+      FormField.tsx                    # Reusable form input
+      AppSidebar.tsx                   # App navigation sidebar
+      TopNav.tsx                       # Top navigation bar
   lib/
-    3d/complex-house.ts              # Static complex house model (100+ meshes, 23 groups)
-    db/queries.ts, db/admin.ts       # Supabase query layers
-    supabase/, claude/, jurisdiction/  # Infrastructure
-    stitch/client.ts                 # Stitch by Google SDK client (UI generation)
-  types/index.ts                     # Supabase-mapped types
+    3d/
+      complex-house.ts                 # Static complex house model (100+ meshes, 23 groups)
+      commercial-hotel.ts              # Commercial hotel model
+      commercial-roofs.ts              # Commercial roof types
+      commercial-details.ts            # Commercial detail views
+    db/queries.ts                      # Supabase query layer
+    db/admin.ts                        # Admin CRUD operations
+    content/curriculum.ts              # Curriculum data
+    content/damage-scenarios.ts        # Damage scenario data
+    supabase/client.ts, server.ts      # Supabase client setup
+    claude/client.ts                   # Anthropic Claude client
+    jurisdiction/                      # Jurisdiction lookup service
+      index.ts, types.ts, climate-zones.ts, special.ts, state-adoptions.ts
+    stitch/client.ts                   # Stitch by Google SDK client
+    utils.ts                           # Shared utilities
+  middleware.ts                        # Auth middleware
+  types/index.ts                       # Supabase-mapped types
 ```
-
-## BIM Architecture (Pascal-inspired)
-- **Parametric objects are the source of truth** — geometry is DERIVED, never stored
-- **Command pattern** — every mutation goes through a Command with execute/undo
-- **3 Zustand stores**: sceneStore (graph + undo), viewerStore (camera + display), editorStore (tools + panels)
-- **Scene graph**: Building → Level → Zone → Wall/Slab → Opening
-- **Display modes**: stacked (normal), exploded (levels separated), solo (one level)
-- **Training mode**: locks editing, enables lesson step playback through same viewer
 
 ## Database Tables (19)
 profiles, organizations, organization_members, house_models, house_model_versions, assemblies, assembly_dependencies, modules, lessons, lesson_steps, hotspots, code_references, assembly_code_references, failure_modes, quizzes, user_progress, user_step_progress, glossary_terms, media_assets
@@ -158,24 +183,24 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## Design Rules — "Architectural Void" Dark Theme
 - Background: #131313 (deep charcoal, NOT pure black)
 - Surfaces: --surface (#131313), --surface-low (#1c1b1b), --surface-container (#201f1f), --surface-high (#2a2a2a), --surface-highest (#353534)
-- Primary: #FF8C00 (construction orange) — CTAs, active states, gradient-primary (#FF8C00 → #ffb77d)
+- Primary: #FF8C00 (construction orange) — CTAs, active states, gradient-primary (#FF8C00 -> #ffb77d)
 - Primary glow text: #ffb77d (warm amber)
 - Secondary (data): #82CFFF (blueprint blue)
 - Tertiary: #ADCBDA (cool grey-blue)
 - On-surface text: #e5e2e1 (warm off-white, NEVER pure white) with opacity levels (/40, /35, /30)
-- Outline/ghost borders: #564334 at 15% opacity — NO 1px solid borders, use tonal surface shifts
-- Glass panels: surface-high at 70% opacity + 20px blur
+- Ghost borders: rgba(86,67,52,0.15) via `box-shadow: inset 0 0 0 1px` — NO `border` classes, NO `border-white/8`
+- Glass panels: rgba(42,42,42,0.7) + backdrop-blur 20px
 - Shadows: on-surface at 4% opacity, 32px blur
 - Headlines/labels: Space Grotesk (font-headline, font-label classes)
 - Body: Inter
-- Cards: bg-[var(--surface-container)], rounded-2xl, ghost border via inset box-shadow
+- Cards: bg-[#201f1f], rounded-2xl, ghost border via inset box-shadow
+- Buttons: bg-[#FF8C00] text-[#131313], hover:opacity-90 — NOT bg-amber-500/text-black
 - No emojis in UI
 - Framer Motion for animations
-- Stitch-inspired dark design system
 - Full-screen layout for lesson/inspect views (fixed inset-0)
 
 ## Jurisdiction Service (LIVE)
-ZIP → ASCE 7 wind speed → DOE climate zones → state code adoptions → special jurisdictions (HVHZ, NYC, CA-WUI, TX-TDI, WI-UDC)
+ZIP -> ASCE 7 wind speed -> DOE climate zones -> state code adoptions -> special jurisdictions (HVHZ, NYC, CA-WUI, TX-TDI, WI-UDC)
 
 ## Commands
 ```bash
@@ -192,8 +217,10 @@ npx tsc --noEmit # Type check
 5. ~~Integrate 3D viewer with complex house model~~ DONE
 6. ~~Wire lessons to model visibility/camera/explode + code refs~~ DONE
 7. ~~Add inspect mode and quiz mode~~ DONE
-8. ~~BIM editor: schema, commands, stores, viewer, tree, inspector, toolbar~~ DONE
-9. Refine UX and content pipeline
+8. ~~Dark theme audit — migrate all pages to Architectural Void~~ DONE
+9. Seed MVP content into Supabase
+10. Wire Supabase auth to login page
+11. Deploy to Vercel
 
 ## Non-Negotiable Principles
 1. Real sequence matters more than pretty visuals
@@ -224,14 +251,9 @@ npx tsc --noEmit # Type check
 - Data-driven content, not hardcoded
 
 ## What's Next
-- [ ] Wire wall drawing tool (click to place wall endpoints in viewport)
-- [ ] Add opening placement (windows/doors in walls)
-- [ ] Add roof generation from wall outlines (parametric pitch/overhang)
-- [ ] Add snap-to-grid and snap-to-endpoint
-- [ ] Connect editor scene graph to lesson system (training mode toggle)
-- [ ] Add 2D plan view mode (top-down, walls as lines)
-- [ ] Add section view (cut through building)
-- [ ] Local save/load (IndexedDB)
 - [ ] Seed MVP content into Supabase
 - [ ] Wire Supabase auth to login page
 - [ ] Deploy to Vercel
+- [ ] Add commercial roofing training modules
+- [ ] Build damage assessment workflow
+- [ ] Content pipeline for lesson creation

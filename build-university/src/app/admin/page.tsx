@@ -14,17 +14,18 @@ export default function AdminOverview() {
   return (
     <div className="p-8 max-w-4xl">
       <h1 className="text-2xl font-bold mb-2">Admin Dashboard</h1>
-      <p className="text-white/40 mb-8">Manage content for BuildRight 3D</p>
+      <p className="text-[#e5e2e1]/40 mb-8">Manage content for BuildRight 3D</p>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {SECTIONS.map(s => (
           <Link
             key={s.href}
             href={s.href}
-            className="bg-white/3 border border-white/8 rounded-xl p-5 hover:border-amber-500/30 hover:bg-white/5 transition-colors"
+            className="bg-[#201f1f] rounded-xl p-5 hover:bg-[#2a2a2a] transition-colors"
+            style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}
           >
             <div className="font-semibold mb-1">{s.label}</div>
-            <div className="text-white/40 text-sm">{s.desc}</div>
+            <div className="text-[#e5e2e1]/40 text-sm">{s.desc}</div>
           </Link>
         ))}
       </div>

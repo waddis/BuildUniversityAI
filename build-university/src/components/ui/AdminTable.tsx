@@ -19,30 +19,30 @@ export default function AdminTable<T extends { id: string }>({
 }: AdminTableProps<T>) {
   if (rows.length === 0) {
     return (
-      <div className="bg-white/3 border border-white/8 rounded-xl p-8 text-center text-white/30">
+      <div className="bg-[#201f1f] rounded-xl p-8 text-center text-[#e5e2e1]/30" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
         {emptyMessage}
       </div>
     )
   }
 
   return (
-    <div className="bg-white/3 border border-white/8 rounded-xl overflow-hidden">
+    <div className="bg-[#201f1f] rounded-xl overflow-hidden" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/8">
+          <tr style={{ boxShadow: 'inset 0 -1px 0 rgba(86,67,52,0.15)' }}>
             {columns.map(col => (
-              <th key={col.key} className="px-4 py-3 text-left text-white/40 font-medium">
+              <th key={col.key} className="px-4 py-3 text-left text-[#e5e2e1]/40 font-medium">
                 {col.label}
               </th>
             ))}
             {(onEdit || onDelete) && (
-              <th className="px-4 py-3 text-right text-white/40 font-medium w-24">Actions</th>
+              <th className="px-4 py-3 text-right text-[#e5e2e1]/40 font-medium w-24">Actions</th>
             )}
           </tr>
         </thead>
         <tbody>
           {rows.map(row => (
-            <tr key={row.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+            <tr key={row.id} className="hover:bg-[#2a2a2a] transition-colors" style={{ boxShadow: 'inset 0 -1px 0 rgba(86,67,52,0.08)' }}>
               {columns.map(col => (
                 <td key={col.key} className="px-4 py-3">
                   {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '')}
@@ -51,7 +51,7 @@ export default function AdminTable<T extends { id: string }>({
               {(onEdit || onDelete) && (
                 <td className="px-4 py-3 text-right space-x-2">
                   {onEdit && (
-                    <button onClick={() => onEdit(row)} className="text-amber-500/70 hover:text-amber-500 text-xs">
+                    <button onClick={() => onEdit(row)} className="text-[#FF8C00]/70 hover:text-[#FF8C00] text-xs">
                       Edit
                     </button>
                   )}

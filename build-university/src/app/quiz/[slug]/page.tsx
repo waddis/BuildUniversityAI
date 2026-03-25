@@ -55,12 +55,12 @@ export default function QuizPage({ params }: { params: Promise<{ slug: string }>
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-xl">
-        <Link href="/learn" className="text-white/30 hover:text-white/60 text-sm mb-6 inline-block">&larr; Back to courses</Link>
+        <Link href="/learn" className="text-[#e5e2e1]/30 hover:text-[#e5e2e1]/60 text-sm mb-6 inline-block">&larr; Back to courses</Link>
 
-        <div className="bg-white/3 border border-white/8 rounded-2xl overflow-hidden">
-          <div className="p-5 border-b border-white/8">
+        <div className="bg-[#201f1f] rounded-2xl overflow-hidden" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
+          <div className="p-5" style={{ boxShadow: 'inset 0 -1px 0 rgba(86,67,52,0.15)' }}>
             <h1 className="text-lg font-bold">Valley Metal & Flashing Quiz</h1>
-            <p className="text-white/40 text-xs mt-1 capitalize">{slug.replace(/-/g, ' ')}</p>
+            <p className="text-[#e5e2e1]/40 text-xs mt-1 capitalize">{slug.replace(/-/g, ' ')}</p>
           </div>
 
           {result ? (
@@ -69,13 +69,13 @@ export default function QuizPage({ params }: { params: Promise<{ slug: string }>
                 {result.score}%
               </div>
               <p className={`text-sm mb-6 ${result.passed ? 'text-green-400' : 'text-red-400'}`}>
-                {result.passed ? 'Congratulations — you passed!' : `You need 70% to pass. Review the lesson and try again.`}
+                {result.passed ? 'Congratulations -- you passed!' : `You need 70% to pass. Review the lesson and try again.`}
               </p>
               <div className="flex gap-3 justify-center">
-                <Link href={`/lesson/${slug}`} className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm hover:bg-white/10">
+                <Link href={`/lesson/${slug}`} className="px-4 py-2 bg-[#2a2a2a] rounded-lg text-sm hover:bg-[#353534]" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
                   Review Lesson
                 </Link>
-                <button onClick={() => setResult(null)} className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+                <button onClick={() => setResult(null)} className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
                   Retake Quiz
                 </button>
               </div>

@@ -478,7 +478,7 @@ export default function DamageDetailViewer({ scenario, onClose }: DamageDetailVi
               <p className="text-white/40 text-xs mt-0.5">{scenario.subtitle}</p>
             </div>
             {onClose && (
-              <button onClick={onClose} className="px-3 py-1.5 text-white/50 hover:text-white text-sm border border-white/10 rounded-lg hover:bg-white/5 transition-colors">
+              <button onClick={onClose} className="px-3 py-1.5 text-[#e5e2e1]/50 hover:text-[#e5e2e1] text-sm border  rounded-lg hover:bg-[#2a2a2a] transition-colors">
                 Close
               </button>
             )}
@@ -495,9 +495,9 @@ export default function DamageDetailViewer({ scenario, onClose }: DamageDetailVi
                 onClick={() => goToStop(i)}
                 className={`h-1.5 rounded-full transition-all duration-500 ${
                   i === currentStop
-                    ? 'w-8 bg-amber-500'
+                    ? 'w-8 bg-[#FF8C00]'
                     : i < currentStop
-                    ? 'w-1.5 bg-amber-500/40'
+                    ? 'w-1.5 bg-[#FF8C00]/40'
                     : 'w-1.5 bg-white/20'
                 }`}
               />
@@ -512,7 +512,7 @@ export default function DamageDetailViewer({ scenario, onClose }: DamageDetailVi
                   Step {currentStop + 1} of {totalStops}
                 </div>
                 <h2 className="text-base font-semibold mb-1">{stop?.title}</h2>
-                <p className="text-white/50 text-sm leading-relaxed line-clamp-3">{stop?.narration}</p>
+                <p className="text-[#e5e2e1]/50 text-sm leading-relaxed line-clamp-3">{stop?.narration}</p>
               </div>
 
               {/* Navigation */}
@@ -520,14 +520,14 @@ export default function DamageDetailViewer({ scenario, onClose }: DamageDetailVi
                 <button
                   onClick={prevStop}
                   disabled={currentStop === 0 || isTransitioning}
-                  className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/5 disabled:opacity-20 transition-colors"
+                  className="w-10 h-10 rounded-full border  flex items-center justify-center text-[#e5e2e1]/50 hover:text-[#e5e2e1] hover:bg-[#2a2a2a] disabled:opacity-20 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                 </button>
                 <button
                   onClick={nextStop}
                   disabled={currentStop === totalStops - 1 || isTransitioning}
-                  className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-black hover:bg-amber-400 disabled:opacity-20 transition-colors"
+                  className="w-10 h-10 rounded-full bg-[#FF8C00] flex items-center justify-center text-black hover:bg-amber-400 disabled:opacity-20 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </button>
@@ -538,19 +538,19 @@ export default function DamageDetailViewer({ scenario, onClose }: DamageDetailVi
 
         {/* Selected annotation detail card */}
         {selectedAnnotation && (
-          <div className="absolute right-4 top-20 z-30 w-72 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl p-4 animate-[slideIn_0.2s_ease-out]">
+          <div className="absolute right-4 top-20 z-30 w-72 bg-black/90 backdrop-blur-md border  rounded-xl p-4 animate-[slideIn_0.2s_ease-out]">
             <div className="flex items-start gap-2 mb-2">
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${SEVERITY_COLORS[selectedAnnotation.severity].bg} ${SEVERITY_COLORS[selectedAnnotation.severity].css}`}>
                 {selectedAnnotation.severity}
               </span>
-              <button onClick={() => setSelectedAnnotation(null)} className="ml-auto text-white/30 hover:text-white text-xs">
+              <button onClick={() => setSelectedAnnotation(null)} className="ml-auto text-white/30 hover:text-[#e5e2e1] text-xs">
                 close
               </button>
             </div>
             <h3 className="font-semibold text-sm mb-1">{selectedAnnotation.title}</h3>
-            <p className="text-white/50 text-xs leading-relaxed">{selectedAnnotation.description}</p>
+            <p className="text-[#e5e2e1]/50 text-xs leading-relaxed">{selectedAnnotation.description}</p>
             {selectedAnnotation.codeRef && (
-              <span className="inline-block mt-2 text-amber-500/70 text-xs font-mono bg-amber-500/5 px-2 py-0.5 rounded">
+              <span className="inline-block mt-2 text-amber-500/70 text-xs font-mono bg-[#FF8C00]/5 px-2 py-0.5 rounded">
                 {selectedAnnotation.codeRef}
               </span>
             )}

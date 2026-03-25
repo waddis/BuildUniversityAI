@@ -18,8 +18,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
-      <aside className="w-56 bg-white/3 border-r border-white/8 flex flex-col py-6 shrink-0">
-        <Link href="/" className="px-5 text-amber-500 font-bold text-sm tracking-wider uppercase mb-8">
+      <aside className="w-56 bg-[#1c1b1b] flex flex-col py-6 shrink-0" style={{ boxShadow: 'inset -1px 0 0 rgba(86,67,52,0.15)' }}>
+        <Link href="/" className="px-5 text-[#FF8C00] font-bold text-sm tracking-wider uppercase mb-8">
           BuildRight 3D
         </Link>
         <nav className="flex-1 space-y-1 px-3">
@@ -31,8 +31,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={item.href}
                 className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
                   active
-                    ? 'bg-amber-500/10 text-amber-500'
-                    : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                    ? 'bg-[#FF8C00]/10 text-[#FF8C00]'
+                    : 'text-[#e5e2e1]/50 hover:text-[#e5e2e1]/80 hover:bg-[#2a2a2a]'
                 }`}
               >
                 {item.label}
@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             )
           })}
         </nav>
-        <div className="px-5 text-white/20 text-xs">Admin CMS</div>
+        <div className="px-5 text-[#e5e2e1]/20 text-xs">Admin CMS</div>
       </aside>
 
       {/* Content */}

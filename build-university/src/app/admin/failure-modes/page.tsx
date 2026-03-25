@@ -51,7 +51,7 @@ export default function FailureModesPage() {
       case 'critical': return 'bg-red-500/10 text-red-400'
       case 'severe': return 'bg-orange-500/10 text-orange-400'
       case 'moderate': return 'bg-yellow-500/10 text-yellow-400'
-      default: return 'bg-white/5 text-white/40'
+      default: return 'bg-[#2a2a2a] text-[#e5e2e1]/40'
     }
   }
 
@@ -60,16 +60,16 @@ export default function FailureModesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">Failure Modes</h1>
-          <p className="text-white/40 text-sm">Incorrect installs, consequences, and inspection notes</p>
+          <p className="text-[#e5e2e1]/40 text-sm">Incorrect installs, consequences, and inspection notes</p>
         </div>
         <button onClick={() => { setForm(EMPTY); setEditing(null); setShowForm(s => !s) }}
-          className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+          className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
           {showForm ? 'Cancel' : '+ New Failure Mode'}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white/3 border border-white/8 rounded-xl p-5 mb-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-[#201f1f] rounded-xl p-5 mb-6 space-y-4" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
           <FormField label="Assembly" name="assembly_id" value={form.assembly_id} onChange={handleChange} type="select" options={assemblyOptions} required />
           <FormField label="Title" name="title" value={form.title} onChange={handleChange} required placeholder="Reverse-lapped valley underlayment" />
           <FormField label="Description" name="description" value={form.description} onChange={handleChange} type="textarea" required placeholder="Underlayment installed with upper layer beneath lower layer, creating a path for water entry..." />
@@ -81,7 +81,7 @@ export default function FailureModesPage() {
           <FormField label="Consequence Notes" name="consequence_notes" value={form.consequence_notes} onChange={handleChange} type="textarea" placeholder="What happens when this fails..." />
           <FormField label="Prevention Notes" name="prevention_notes" value={form.prevention_notes} onChange={handleChange} type="textarea" placeholder="How to prevent this failure..." />
           <FormField label="Claim Relevance" name="claim_relevance" value={form.claim_relevance} onChange={handleChange} type="textarea" placeholder="How this relates to insurance claims..." />
-          <button type="submit" className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+          <button type="submit" className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
             {editing ? 'Update' : 'Create'}
           </button>
         </form>
@@ -91,7 +91,7 @@ export default function FailureModesPage() {
         columns={[
           { key: 'title', label: 'Title' },
           { key: 'assemblies', label: 'Assembly', render: (r: FailureMode & { assemblies?: { name: string } }) => (
-            <span className="text-white/50 text-xs">{r.assemblies?.name ?? '—'}</span>
+            <span className="text-[#e5e2e1]/50 text-xs">{r.assemblies?.name ?? '--'}</span>
           )},
           { key: 'severity', label: 'Severity', render: (r: FailureMode) => (
             <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${severityColor(r.severity)}`}>{r.severity}</span>

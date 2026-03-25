@@ -75,7 +75,7 @@ export default function LessonsAdminPage() {
       <div className="flex gap-2 mb-6">
         {(['modules', 'lessons'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 rounded-lg text-sm ${
-            tab === t ? 'bg-amber-500/10 text-amber-500' : 'bg-white/5 text-white/40'
+            tab === t ? 'bg-[#FF8C00]/10 text-[#FF8C00]' : 'bg-[#2a2a2a] text-[#e5e2e1]/40'
           }`}>
             {t === 'modules' ? 'Modules' : 'Lessons'}
           </button>
@@ -86,13 +86,13 @@ export default function LessonsAdminPage() {
         <>
           <div className="flex justify-end mb-4">
             <button onClick={() => { setModForm(EMPTY_MOD); setEditingMod(null); setShowModForm(s => !s) }}
-              className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+              className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
               {showModForm ? 'Cancel' : '+ New Module'}
             </button>
           </div>
 
           {showModForm && (
-            <form onSubmit={submitModule} className="bg-white/3 border border-white/8 rounded-xl p-5 mb-6 space-y-4">
+            <form onSubmit={submitModule} className="bg-[#201f1f] rounded-xl p-5 mb-6 space-y-4" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label="Slug" name="slug" value={modForm.slug} onChange={handleModChange} required placeholder="complex-roof-geometry" />
                 <FormField label="Title" name="title" value={modForm.title} onChange={handleModChange} required placeholder="Complex Roof Geometry & Framing" />
@@ -105,7 +105,7 @@ export default function LessonsAdminPage() {
                 <FormField label="Order" name="order_index" value={modForm.order_index} onChange={handleModChange} type="number" />
               </div>
               <FormField label="Track" name="track" value={modForm.track} onChange={handleModChange} placeholder="roof" />
-              <button type="submit" className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+              <button type="submit" className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
                 {editingMod ? 'Update' : 'Create'}
               </button>
             </form>
@@ -117,7 +117,7 @@ export default function LessonsAdminPage() {
               { key: 'phase', label: 'Phase', render: r => <span className="text-xs capitalize">{r.phase.replace(/_/g, ' ')}</span> },
               { key: 'difficulty', label: 'Difficulty', render: r => <span className="text-xs capitalize">{r.difficulty}</span> },
               { key: 'status', label: 'Status', render: r => (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === 'published' ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-white/40'}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === 'published' ? 'bg-green-500/10 text-green-400' : 'bg-[#2a2a2a] text-[#e5e2e1]/40'}`}>
                   {r.status}
                 </span>
               )},
@@ -134,18 +134,18 @@ export default function LessonsAdminPage() {
         <>
           <div className="flex items-center gap-4 mb-4">
             <select value={selectedModule} onChange={e => setSelectedModule(e.target.value)}
-              className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white">
+              className="px-3 py-2 bg-[#2a2a2a] rounded-lg text-sm text-[#e5e2e1]" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
               <option value="">All modules</option>
               {modules.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}
             </select>
             <button onClick={() => { setLesForm(EMPTY_LES); setEditingLes(null); setShowLesForm(s => !s) }}
-              className="ml-auto px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+              className="ml-auto px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
               {showLesForm ? 'Cancel' : '+ New Lesson'}
             </button>
           </div>
 
           {showLesForm && (
-            <form onSubmit={submitLesson} className="bg-white/3 border border-white/8 rounded-xl p-5 mb-6 space-y-4">
+            <form onSubmit={submitLesson} className="bg-[#201f1f] rounded-xl p-5 mb-6 space-y-4" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label="Slug" name="slug" value={lesForm.slug} onChange={handleLesChange} required placeholder="valley-framing-basics" />
                 <FormField label="Title" name="title" value={lesForm.title} onChange={handleLesChange} required placeholder="Valley Framing Basics" />
@@ -157,7 +157,7 @@ export default function LessonsAdminPage() {
                 <FormField label="Status" name="status" value={lesForm.status} onChange={handleLesChange} type="select" options={STATUSES} />
                 <FormField label="Duration (min)" name="duration_minutes" value={lesForm.duration_minutes} onChange={handleLesChange} type="number" />
               </div>
-              <button type="submit" className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+              <button type="submit" className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
                 {editingLes ? 'Update' : 'Create'}
               </button>
             </form>
@@ -166,14 +166,14 @@ export default function LessonsAdminPage() {
           <AdminTable
             columns={[
               { key: 'title', label: 'Title' },
-              { key: 'lesson_type', label: 'Type', render: (r: Lesson) => <span className="text-xs capitalize bg-white/5 px-2 py-0.5 rounded-full">{r.lesson_type}</span> },
+              { key: 'lesson_type', label: 'Type', render: (r: Lesson) => <span className="text-xs capitalize bg-[#2a2a2a] px-2 py-0.5 rounded-full">{r.lesson_type}</span> },
               { key: 'difficulty', label: 'Difficulty', render: (r: Lesson) => <span className="text-xs capitalize">{r.difficulty}</span> },
               { key: 'status', label: 'Status', render: (r: Lesson) => (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === 'published' ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-white/40'}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === 'published' ? 'bg-green-500/10 text-green-400' : 'bg-[#2a2a2a] text-[#e5e2e1]/40'}`}>
                   {r.status}
                 </span>
               )},
-              { key: 'duration_minutes', label: 'Duration', render: (r: Lesson) => r.duration_minutes ? `${r.duration_minutes}m` : '—' },
+              { key: 'duration_minutes', label: 'Duration', render: (r: Lesson) => r.duration_minutes ? `${r.duration_minutes}m` : '--' },
             ]}
             rows={lessons}
             onEdit={row => {

@@ -52,25 +52,25 @@ export default function ModelsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">House Models</h1>
-          <p className="text-white/40 text-sm">3D house models and their versions</p>
+          <p className="text-[#e5e2e1]/40 text-sm">3D house models and their versions</p>
         </div>
         <button
           onClick={() => { setForm(EMPTY); setEditing(null); setShowForm(s => !s) }}
-          className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400"
+          className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90"
         >
           {showForm ? 'Cancel' : '+ New Model'}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white/3 border border-white/8 rounded-xl p-5 mb-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-[#201f1f] rounded-xl p-5 mb-6 space-y-4" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField label="Slug" name="slug" value={form.slug} onChange={handleChange} required placeholder="complex-farmhouse" />
             <FormField label="Title" name="title" value={form.title} onChange={handleChange} required placeholder="Complex Modern Farmhouse" />
           </div>
           <FormField label="Description" name="description" value={form.description} onChange={handleChange} type="textarea" />
           <FormField label="Complexity" name="complexity_level" value={form.complexity_level} onChange={handleChange} type="select" options={COMPLEXITY} />
-          <button type="submit" className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+          <button type="submit" className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
             {editing ? 'Update' : 'Create'}
           </button>
         </form>
@@ -79,11 +79,11 @@ export default function ModelsPage() {
       <AdminTable
         columns={[
           { key: 'title', label: 'Title' },
-          { key: 'slug', label: 'Slug', render: r => <code className="text-amber-500/60 text-xs">{r.slug}</code> },
+          { key: 'slug', label: 'Slug', render: r => <code className="text-[#FF8C00]/60 text-xs">{r.slug}</code> },
           { key: 'complexity_level', label: 'Complexity', render: r => (
-            <span className="text-xs bg-white/5 px-2 py-0.5 rounded-full capitalize">{r.complexity_level}</span>
+            <span className="text-xs bg-[#2a2a2a] px-2 py-0.5 rounded-full capitalize">{r.complexity_level}</span>
           )},
-          { key: 'active_version', label: 'Version', render: r => <span className="text-white/40">v{r.active_version}</span> },
+          { key: 'active_version', label: 'Version', render: r => <span className="text-[#e5e2e1]/40">v{r.active_version}</span> },
         ]}
         rows={rows}
         onEdit={handleEdit}

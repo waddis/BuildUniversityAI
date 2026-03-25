@@ -64,7 +64,7 @@ export default function QuizPanel({ questions, passingScore, onComplete }: QuizP
         <div className={`text-4xl font-bold mb-2 ${passed ? 'text-green-400' : 'text-red-400'}`}>
           {score}%
         </div>
-        <p className="text-white/60 text-sm">{correct} of {questions.length} correct</p>
+        <p className="text-[#e5e2e1]/60 text-sm">{correct} of {questions.length} correct</p>
         <p className={`text-sm mt-2 ${passed ? 'text-green-400' : 'text-red-400'}`}>
           {passed ? 'Passed!' : `Need ${passingScore}% to pass`}
         </p>
@@ -81,11 +81,11 @@ export default function QuizPanel({ questions, passingScore, onComplete }: QuizP
         <div className="flex gap-1 mb-3">
           {questions.map((_, i) => (
             <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-              i < currentQ ? 'bg-amber-500/60' : i === currentQ ? 'bg-amber-400' : 'bg-white/10'
+              i < currentQ ? 'bg-[#FF8C00]/60' : i === currentQ ? 'bg-[#FF8C00]' : 'bg-[#2a2a2a]'
             }`} />
           ))}
         </div>
-        <div className="text-white/40 text-xs">Question {currentQ + 1} of {questions.length}</div>
+        <div className="text-[#e5e2e1]/40 text-xs">Question {currentQ + 1} of {questions.length}</div>
       </div>
 
       {/* Question */}
@@ -104,19 +104,20 @@ export default function QuizPanel({ questions, passingScore, onComplete }: QuizP
                     key={i}
                     onClick={() => handleAnswer(i)}
                     disabled={showExplanation}
-                    className={`w-full text-left px-4 py-3 rounded-lg text-sm border transition-all ${
+                    className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all ${
                       correct
-                        ? 'border-green-500/50 bg-green-500/10 text-green-400'
+                        ? 'bg-green-500/10 text-green-400'
                         : selected && !isCorrect
-                          ? 'border-red-500/30 bg-red-500/5 text-red-400'
+                          ? 'bg-red-500/5 text-red-400'
                           : selected
-                            ? 'border-amber-500/30 bg-amber-500/10'
+                            ? 'bg-[#FF8C00]/10'
                             : showExplanation
-                              ? 'border-white/5 bg-white/[0.02] text-white/30'
-                              : 'border-white/8 bg-white/3 hover:bg-white/5 hover:border-white/15 text-white/70'
+                              ? 'bg-[#1c1b1b] text-[#e5e2e1]/30'
+                              : 'bg-[#201f1f] hover:bg-[#2a2a2a] text-[#e5e2e1]/70'
                     }`}
+                    style={{ boxShadow: correct ? 'inset 0 0 0 1px rgba(34,197,94,0.5)' : selected && !isCorrect ? 'inset 0 0 0 1px rgba(239,68,68,0.3)' : selected ? 'inset 0 0 0 1px rgba(255,140,0,0.3)' : showExplanation ? 'none' : 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}
                   >
-                    <span className="text-white/30 mr-2 font-mono text-xs">{String.fromCharCode(65 + i)}.</span>
+                    <span className="text-[#e5e2e1]/30 mr-2 font-mono text-xs">{String.fromCharCode(65 + i)}.</span>
                     {opt}
                   </button>
                 )
@@ -136,15 +137,16 @@ export default function QuizPanel({ questions, passingScore, onComplete }: QuizP
                     key={opt}
                     onClick={() => handleAnswer(val)}
                     disabled={showExplanation}
-                    className={`flex-1 px-4 py-3.5 rounded-lg text-sm font-medium border transition-all ${
+                    className={`flex-1 px-4 py-3.5 rounded-lg text-sm font-medium transition-all ${
                       correct
-                        ? 'border-green-500/50 bg-green-500/10 text-green-400'
+                        ? 'bg-green-500/10 text-green-400'
                         : selected && !isCorrect
-                          ? 'border-red-500/30 bg-red-500/5 text-red-400'
+                          ? 'bg-red-500/5 text-red-400'
                           : showExplanation
-                            ? 'border-white/5 text-white/30'
-                            : 'border-white/8 bg-white/3 hover:bg-white/5 hover:border-white/15'
+                            ? 'text-[#e5e2e1]/30'
+                            : 'bg-[#201f1f] hover:bg-[#2a2a2a]'
                     }`}
+                    style={{ boxShadow: correct ? 'inset 0 0 0 1px rgba(34,197,94,0.5)' : selected && !isCorrect ? 'inset 0 0 0 1px rgba(239,68,68,0.3)' : showExplanation ? 'none' : 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}
                   >
                     {opt}
                   </button>
@@ -155,9 +157,9 @@ export default function QuizPanel({ questions, passingScore, onComplete }: QuizP
 
           {/* Explanation */}
           {showExplanation && q.explanation && (
-            <div className={`mt-4 p-3 rounded-lg border text-xs leading-relaxed animate-[fadeIn_0.2s_ease-out] ${
-              isCorrect ? 'border-green-500/20 bg-green-500/5 text-green-300/80' : 'border-red-500/20 bg-red-500/5 text-red-300/80'
-            }`}>
+            <div className={`mt-4 p-3 rounded-lg text-xs leading-relaxed animate-[fadeIn_0.2s_ease-out] ${
+              isCorrect ? 'bg-green-500/5 text-green-300/80' : 'bg-red-500/5 text-red-300/80'
+            }`} style={{ boxShadow: isCorrect ? 'inset 0 0 0 1px rgba(34,197,94,0.2)' : 'inset 0 0 0 1px rgba(239,68,68,0.2)' }}>
               <span className="font-semibold">{isCorrect ? 'Correct!' : 'Not quite.'}</span> {q.explanation}
             </div>
           )}
@@ -166,12 +168,12 @@ export default function QuizPanel({ questions, passingScore, onComplete }: QuizP
 
       {/* Navigation */}
       {showExplanation && (
-        <div className="px-5 py-3 border-t border-white/8 animate-[fadeIn_0.2s_ease-out]">
-          <div className="text-[10px] text-white/15 text-center mb-1.5">Press Enter to continue</div>
+        <div className="px-5 py-3 animate-[fadeIn_0.2s_ease-out]" style={{ boxShadow: 'inset 0 1px 0 rgba(86,67,52,0.15)' }}>
+          <div className="text-[10px] text-[#e5e2e1]/15 text-center mb-1.5">Press Enter to continue</div>
           <button
             onClick={handleNext}
             autoFocus
-            className="w-full px-4 py-2.5 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400 transition-all active:scale-[0.97]"
+            className="w-full px-4 py-2.5 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90 transition-all active:scale-[0.97]"
           >
             {isLast ? 'See Results' : 'Next Question'}
           </button>

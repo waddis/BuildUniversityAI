@@ -36,16 +36,16 @@ export default function CodeRefsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold">Code References</h1>
-          <p className="text-white/40 text-sm">IRC, IBC, ASCE, ASTM citations — reusable across assemblies</p>
+          <p className="text-[#e5e2e1]/40 text-sm">IRC, IBC, ASCE, ASTM citations -- reusable across assemblies</p>
         </div>
         <button onClick={() => { setForm(EMPTY); setEditing(null); setShowForm(s => !s) }}
-          className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+          className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
           {showForm ? 'Cancel' : '+ New Reference'}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white/3 border border-white/8 rounded-xl p-5 mb-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-[#201f1f] rounded-xl p-5 mb-6 space-y-4" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
           <div className="grid gap-4 sm:grid-cols-3">
             <FormField label="Code Family" name="code_family" value={form.code_family} onChange={handleChange} type="select" options={CODE_FAMILIES} />
             <FormField label="Section" name="code_section" value={form.code_section} onChange={handleChange} required placeholder="R905.2.7" />
@@ -57,7 +57,7 @@ export default function CodeRefsPage() {
             <FormField label="Jurisdiction Scope" name="jurisdiction_scope" value={form.jurisdiction_scope} onChange={handleChange} placeholder="Universal, Florida-only, etc." />
             <FormField label="Climate Scope" name="climate_scope" value={form.climate_scope} onChange={handleChange} placeholder="All, Cold (zones 5-8), etc." />
           </div>
-          <button type="submit" className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400">
+          <button type="submit" className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90">
             {editing ? 'Update' : 'Create'}
           </button>
         </form>
@@ -65,10 +65,10 @@ export default function CodeRefsPage() {
 
       <AdminTable
         columns={[
-          { key: 'code_family', label: 'Family', render: (r: CodeReference) => <span className="text-amber-500 font-mono text-xs">{r.code_family}</span> },
+          { key: 'code_family', label: 'Family', render: (r: CodeReference) => <span className="text-[#FF8C00] font-mono text-xs">{r.code_family}</span> },
           { key: 'code_section', label: 'Section', render: (r: CodeReference) => <code className="text-xs">{r.code_section}</code> },
           { key: 'title', label: 'Title' },
-          { key: 'short_summary', label: 'Summary', render: (r: CodeReference) => <span className="text-white/50 text-xs line-clamp-1">{r.short_summary}</span> },
+          { key: 'short_summary', label: 'Summary', render: (r: CodeReference) => <span className="text-[#e5e2e1]/50 text-xs line-clamp-1">{r.short_summary}</span> },
         ]}
         rows={rows}
         onEdit={row => {

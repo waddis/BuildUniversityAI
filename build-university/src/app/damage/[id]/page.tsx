@@ -30,7 +30,7 @@ export default function DamageViewerPage({ params }: { params: Promise<{ id: str
           <p className="text-white/40 text-sm mb-4">No damage scenario found for &ldquo;{id}&rdquo;</p>
           <button
             onClick={() => router.push('/damage')}
-            className="px-4 py-2 bg-amber-500 text-black text-sm font-semibold rounded-lg hover:bg-amber-400"
+            className="px-4 py-2 bg-[#FF8C00] text-[#131313] text-sm font-semibold rounded-lg hover:opacity-90"
           >
             View All Scenarios
           </button>

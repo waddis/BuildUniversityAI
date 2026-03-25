@@ -8,12 +8,12 @@ export default function ModulePage({ params }: { params: Promise<{ phase: string
 
   return (
     <div className="min-h-screen px-6 py-12 max-w-5xl mx-auto">
-      <Link href={`/learn/${phase}`} className="text-white/30 hover:text-white/60 text-sm mb-8 inline-block">&larr; Back to phase</Link>
+      <Link href={`/learn/${phase}`} className="text-[#e5e2e1]/30 hover:text-[#e5e2e1]/60 text-sm mb-8 inline-block">&larr; Back to phase</Link>
       <h1 className="text-3xl font-bold mb-2 capitalize">{moduleSlug.replace(/-/g, ' ')}</h1>
-      <p className="text-white/40 mb-10">Lessons in this module</p>
+      <p className="text-[#e5e2e1]/40 mb-10">Lessons in this module</p>
 
-      <div className="bg-white/3 border border-white/8 rounded-xl p-8 text-center">
-        <p className="text-white/30">Lessons loading from database...</p>
+      <div className="bg-[#201f1f] rounded-xl p-8 text-center" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.15)' }}>
+        <p className="text-[#e5e2e1]/30">Lessons loading from database...</p>
       </div>
     </div>
   )
