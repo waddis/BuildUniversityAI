@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import type { CameraPreset } from '@/types'
 import { generateComplexHouse } from '@/lib/3d/complex-house'
+import { generateCommercialHotel } from '@/lib/3d/commercial-hotel'
 import CalloutOverlay from './CalloutOverlay'
 import type { Callout } from './CalloutOverlay'
 
@@ -15,7 +16,10 @@ export interface CalloutInput {
   anchorPosition: [number, number, number]
 }
 
+export type ModelType = 'residential' | 'commercial'
+
 interface SceneViewerProps {
+  model?: ModelType
   cameraPreset?: CameraPreset | null
   highlightedGroups?: string[]
   hiddenGroups?: string[]
@@ -60,6 +64,7 @@ const BLUEPRINT_WIRE_COLOR = new THREE.Color(0xc8deff) // light blue-white wiref
 const BLUEPRINT_GRID_COLOR = 0xffffff
 
 export default function SceneViewer({
+  model = 'residential',
   cameraPreset,
   highlightedGroups,
   hiddenGroups,
@@ -151,6 +156,7 @@ export default function SceneViewer({
     mount.appendChild(renderer.domElement)
 
     const isWebGL2 = renderer.capabilities.isWebGL2
+    const isCommercial = model === 'commercial'
 
     const scene = new THREE.Scene()
 
@@ -175,7 +181,11 @@ export default function SceneViewer({
     scene.fog = new THREE.Fog(0xdde6ee, 50, 130)
 
     const camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 300)
-    camera.position.set(28, 16, 26)
+    if (isCommercial) {
+      camera.position.set(60, 30, 50)
+    } else {
+      camera.position.set(28, 16, 26)
+    }
 
     // Environment map for reflections (procedural cubemap from canvas)
     // PMREMGenerator requires WebGL2 for proper rendering
@@ -195,8 +205,9 @@ export default function SceneViewer({
     sun.position.set(20, 35, 15)
     sun.castShadow = true
     sun.shadow.mapSize.setScalar(4096)
-    sun.shadow.camera.left = -30; sun.shadow.camera.right = 30
-    sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30
+    const shadowExtent = isCommercial ? 60 : 30
+    sun.shadow.camera.left = -shadowExtent; sun.shadow.camera.right = shadowExtent
+    sun.shadow.camera.top = shadowExtent; sun.shadow.camera.bottom = -shadowExtent
     sun.shadow.bias = -0.0001; sun.shadow.radius = 2
     sun.shadow.normalBias = 0.03
     scene.add(sun)
@@ -256,7 +267,7 @@ export default function SceneViewer({
 
     // House model
     const meshes: MeshEntry[] = []
-    const houseParts = generateComplexHouse(isWebGL2)
+    const houseParts = isCommercial ? generateCommercialHotel(isWebGL2) : generateComplexHouse(isWebGL2)
     houseParts.forEach(def => {
       const mesh = new THREE.Mesh(def.geometry, def.material)
       mesh.position.set(...def.position)
@@ -289,7 +300,7 @@ export default function SceneViewer({
       }
     })
 
-    const houseCenter = new THREE.Vector3(1, -1, 0)
+    const houseCenter = isCommercial ? new THREE.Vector3(0, -8, 5) : new THREE.Vector3(1, -1, 0)
     const targetCamPos = new THREE.Vector3(28, 16, 26)
     const targetCamTarget = houseCenter.clone()
 
