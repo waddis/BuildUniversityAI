@@ -7,7 +7,7 @@ import AppSidebar from '@/components/ui/AppSidebar'
 const STATS = [
   { value: '128', label: 'Assemblies', color: '#FF8C00' },
   { value: '04', label: 'Code Violations', color: '#82CFFF' },
-  { value: '42.5h', label: 'Hours in Editor', color: '#ADCBDA' },
+  { value: '42.5h', label: 'Hours Training', color: '#ADCBDA' },
 ]
 
 const SIDE_CARDS = [

@@ -13,7 +13,7 @@ import { VISIBILITY_GROUPS } from '@/lib/3d/complex-house'
 const SceneViewer = dynamic(() => import('@/components/3d/SceneViewer'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-[#0a0a14]">
+    <div className="w-full h-full flex items-center justify-center bg-[#131313]">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
         <p className="text-white/20 text-sm">Loading 3D viewer...</p>
@@ -83,7 +83,7 @@ export default function LessonPlayer({ lesson, steps, codeReferences = [] }: Les
   }, [])
 
   return (
-    <div className="fixed inset-0 bg-[#06060e] flex">
+    <div className="fixed inset-0 bg-[#131313] flex">
       {/* 3D Viewer — fills remaining space */}
       <div className="flex-1 relative">
         <SceneViewer

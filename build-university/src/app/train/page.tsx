@@ -14,7 +14,6 @@ export default function TrainPage() {
         <div className="hidden md:flex gap-6">
           <Link href="/dashboard" className="text-[13px] text-[#e5e2e1] opacity-40 hover:opacity-80 transition-opacity">Dashboard</Link>
           <span className="text-[13px] text-[#FF8C00] font-semibold">Training</span>
-          <Link href="/editor" className="text-[13px] text-[#e5e2e1] opacity-40 hover:opacity-80 transition-opacity">Editor</Link>
         </div>
       </nav>
 

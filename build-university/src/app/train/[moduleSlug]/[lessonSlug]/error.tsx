@@ -1,48 +1,23 @@
 'use client'
 
-import { useEffect } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
 
-export default function LessonError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
-  const params = useParams()
-  const moduleSlug = params?.moduleSlug as string | undefined
-
-  useEffect(() => {
-    console.error('Lesson viewer error:', error)
-  }, [error])
-
+export default function LessonError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--surface,#f9f9fb)]">
-      <div className="mx-auto max-w-md rounded-2xl bg-white p-8 shadow-lg text-center">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          The 3D viewer encountered an error
-        </h2>
-        <p className="text-gray-500 mb-6">
-          The lesson could not be displayed. This may be caused by a graphics
-          compatibility issue with your browser.
-        </p>
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={reset}
-            className="rounded-xl bg-[#004e9f] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#003d7a] transition-colors"
-          >
+    <div className="min-h-screen bg-[#131313] flex items-center justify-center px-6">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center mx-auto mb-6">
+          <span className="material-symbols-outlined text-[#FF8C00] text-3xl">view_in_ar</span>
+        </div>
+        <h1 className="text-xl font-bold text-[#e5e2e1] font-headline mb-2">3D Viewer Error</h1>
+        <p className="text-[#e5e2e1]/40 text-sm mb-6">The 3D viewer encountered an error. This may be a browser compatibility issue.</p>
+        <div className="flex gap-3 justify-center">
+          <button onClick={reset} className="px-6 py-2.5 bg-[#FF8C00] text-[#131313] font-bold text-sm rounded-lg hover:opacity-90 transition-all font-headline">
             Try Again
           </button>
-          {moduleSlug && (
-            <Link
-              href={`/train/${moduleSlug}`}
-              className="rounded-xl border border-gray-200 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Back to Module
-            </Link>
-          )}
+          <Link href="/train" className="px-6 py-2.5 bg-[#2a2a2a] text-[#e5e2e1]/70 font-medium text-sm rounded-lg hover:bg-[#353534] transition-all">
+            Back to Training
+          </Link>
         </div>
       </div>
     </div>

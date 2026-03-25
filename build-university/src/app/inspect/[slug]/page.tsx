@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic'
 const SceneViewer = dynamic(() => import('@/components/3d/SceneViewer'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-[#0a0a14]">
+    <div className="w-full h-full flex items-center justify-center bg-[#131313]">
       <div className="w-8 h-8 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
     </div>
   ),
@@ -84,7 +84,7 @@ export default function InspectPage({ params }: { params: Promise<{ slug: string
   }
 
   return (
-    <div className="fixed inset-0 bg-[#06060e] flex">
+    <div className="fixed inset-0 bg-[#131313] flex">
       {/* 3D Viewer */}
       <div className="flex-1 relative">
         <SceneViewer onMeshClick={handleMeshClick} />

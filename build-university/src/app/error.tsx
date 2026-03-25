@@ -1,31 +1,15 @@
 'use client'
 
-import { useEffect } from 'react'
-
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
-  useEffect(() => {
-    console.error('Application error:', error)
-  }, [error])
-
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--surface,#f9f9fb)]">
-      <div className="mx-auto max-w-md rounded-2xl bg-white p-8 shadow-lg text-center">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          Something went wrong
-        </h2>
-        <p className="text-gray-500 mb-6">
-          An unexpected error occurred. Please try again.
-        </p>
-        <button
-          onClick={reset}
-          className="rounded-xl bg-[#004e9f] px-6 py-2.5 text-sm font-medium text-white hover:bg-[#003d7a] transition-colors"
-        >
+    <div className="min-h-screen bg-[#131313] flex items-center justify-center px-6">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 rounded-2xl bg-[#FF8C00]/10 flex items-center justify-center mx-auto mb-6">
+          <span className="material-symbols-outlined text-[#FF8C00] text-3xl">error_outline</span>
+        </div>
+        <h1 className="text-xl font-bold text-[#e5e2e1] font-headline mb-2">Something went wrong</h1>
+        <p className="text-[#e5e2e1]/40 text-sm mb-6">{error.message || 'An unexpected error occurred.'}</p>
+        <button onClick={reset} className="px-6 py-2.5 bg-[#FF8C00] text-[#131313] font-bold text-sm rounded-lg hover:opacity-90 transition-all font-headline">
           Try Again
         </button>
       </div>

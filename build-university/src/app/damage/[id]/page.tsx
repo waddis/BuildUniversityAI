@@ -8,7 +8,7 @@ import { getDamageScenario } from '@/lib/content/damage-scenarios'
 const DamageDetailViewer = dynamic(() => import('@/components/3d/DamageDetailViewer'), {
   ssr: false,
   loading: () => (
-    <div className="fixed inset-0 bg-[#0a0a14] flex items-center justify-center">
+    <div className="fixed inset-0 bg-[#131313] flex items-center justify-center">
       <div className="text-center">
         <div className="w-10 h-10 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin mx-auto mb-3" />
         <p className="text-white/40 text-sm">Loading damage viewer...</p>
@@ -24,7 +24,7 @@ export default function DamageViewerPage({ params }: { params: Promise<{ id: str
 
   if (!scenario) {
     return (
-      <div className="fixed inset-0 bg-[#0a0a14] flex items-center justify-center">
+      <div className="fixed inset-0 bg-[#131313] flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-xl font-bold mb-2">Scenario Not Found</h1>
           <p className="text-white/40 text-sm mb-4">No damage scenario found for &ldquo;{id}&rdquo;</p>

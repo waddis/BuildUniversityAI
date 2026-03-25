@@ -210,7 +210,6 @@ function LearnMode({ lesson, mod }: { lesson: CurriculumLesson; mod: CurriculumM
           <div className="hidden md:flex gap-6">
             <Link href="/dashboard" className="text-[13px] text-[#e5e2e1] opacity-40 hover:opacity-80 transition-opacity">Dashboard</Link>
             <Link href="/train" className="text-[13px] text-[#FF8C00] font-semibold border-b-2 border-[#FF8C00]">Training</Link>
-            <Link href="/editor" className="text-[13px] text-[#e5e2e1] opacity-40 hover:opacity-80 transition-opacity">Editor</Link>
           </div>
         </div>
         <div className="flex items-center gap-3">

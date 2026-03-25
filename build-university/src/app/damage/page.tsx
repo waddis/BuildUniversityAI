@@ -12,7 +12,7 @@ const SEVERITY_BADGE: Record<string, string> = {
 
 export default function DamageIndexPage() {
   return (
-    <div className="min-h-screen bg-[#080810] text-white">
+    <div className="min-h-screen bg-[#131313] text-white">
       {/* Header */}
       <div className="border-b border-white/8 bg-white/[0.01]">
         <div className="max-w-5xl mx-auto px-6 py-8">
