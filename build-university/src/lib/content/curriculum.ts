@@ -13,10 +13,18 @@ export interface CurriculumLesson {
   slug: string; title: string; objective: string; type: 'learn' | 'inspect' | 'quiz'
   durationMinutes: number; steps?: LessonStepData[]; quizQuestions?: QuizQuestionData[]; inspectIssues?: InspectIssueData[]
 }
+export interface CalloutData {
+  id: string
+  text: string                               // main label
+  details?: string[]                         // bullet-point sub-labels
+  worldPosition: [number, number, number]    // where the label floats
+  anchorPosition: [number, number, number]   // what it points to on the model
+}
 export interface LessonStepData {
   title: string; instruction: string; narration?: string; actionType?: 'observe' | 'click' | 'identify' | 'compare'
   camera: CameraPreset; hiddenGroups?: string[]; highlightedGroups?: string[]; explodeOffset?: number
   codeRefs?: { family: string; section: string; summary: string }[]
+  callouts?: CalloutData[]
 }
 export interface QuizQuestionData { text: string; type: 'multiple_choice' | 'true_false'; options?: string[]; correctAnswer: number | string; explanation: string }
 export interface InspectIssueData { meshKey: string; title: string; description: string; severity: 'minor' | 'moderate' | 'severe' | 'critical'; codeRef?: string }
@@ -259,9 +267,20 @@ const M06: CurriculumModule = {
   description: 'Gables, valleys, hips, dormers, turrets — the geometry that defines real roofs and creates the most complex construction challenges.',
   lessons: [
     { slug: 'roof-planes-overview', title: 'Understanding Roof Planes', objective: 'Identify the primary roof planes on a complex residential structure.', type: 'learn', durationMinutes: 10, steps: [
-      { title: 'The Completed House', instruction: 'This house has 4 distinct roof types: a main gable (8:12), a cross-wing gable (10:12), a garage hip (5:12), and a turret cone.', camera: C([32,12,28],[1,0,0],42), highlightedGroups: ['sheathing','gable_ends','ridge_cap','garage_roof','turret','dormer','bump_roof'], hiddenGroups: PH('framing_roof') },
-      { title: 'Main Gable Roof', instruction: 'The primary roof is an 8:12 gable running east-west. The ridge runs along the longest dimension. Two triangular gable ends close each side.', camera: C([5,6,22],[0,2.5,0],32), highlightedGroups: ['sheathing','gable_ends','ridge_cap'], hiddenGroups: HIDE_ALL_BUT_ROOF },
-      { title: 'Cross Wing — Valley Creator', instruction: 'The perpendicular cross wing at 10:12 pitch creates two diagonal VALLEY lines where it meets the main roof — the highest-risk leak areas.', camera: C([22,6,14],[10,2,0],30), highlightedGroups: ['sheathing','valley_metal','gable_ends'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,'turret','dormer','bump_roof'] },
+      { title: 'The Completed House', instruction: 'This house has 4 distinct roof types: a main gable (8:12), a cross-wing gable (10:12), a garage hip (5:12), and a turret cone.', camera: C([32,12,28],[1,0,0],42), highlightedGroups: ['sheathing','gable_ends','ridge_cap','garage_roof','turret','dormer','bump_roof'], hiddenGroups: PH('framing_roof'), callouts: [
+        { id: 'co-main-gable', text: 'Main Gable — 8:12', details: ['Ridge board','Common rafters','Gable end studs'], worldPosition: [0,7,4], anchorPosition: [0,3.7,0] },
+        { id: 'co-cross-wing', text: 'Cross Wing — 10:12', details: ['Steeper pitch','Valley intersection'], worldPosition: [14,6,2], anchorPosition: [10,3.2,0] },
+        { id: 'co-garage-hip', text: 'Garage Hip — 5:12', details: ['Hip rafters','Jack rafters','Low slope'], worldPosition: [-13,3,5], anchorPosition: [-9.5,-1,0] },
+        { id: 'co-turret', text: 'Turret — Conical', details: ['Octagonal plan','Conical cap','Flashed facet joints'], worldPosition: [8,5,9], anchorPosition: [5.5,3.7,6.5] },
+      ] },
+      { title: 'Main Gable Roof', instruction: 'The primary roof is an 8:12 gable running east-west. The ridge runs along the longest dimension. Two triangular gable ends close each side.', camera: C([5,6,22],[0,2.5,0],32), highlightedGroups: ['sheathing','gable_ends','ridge_cap'], hiddenGroups: HIDE_ALL_BUT_ROOF, callouts: [
+        { id: 'co-ridge', text: 'Ridge', details: ['Highest horizontal line','14 ft + overhang'], worldPosition: [0,6,2], anchorPosition: [0,3.7,0] },
+        { id: 'co-gable-end', text: 'Gable End', details: ['Triangular wall section','Board-and-batten cladding'], worldPosition: [-10,4,0], anchorPosition: [-7,1.5,0] },
+      ] },
+      { title: 'Cross Wing — Valley Creator', instruction: 'The perpendicular cross wing at 10:12 pitch creates two diagonal VALLEY lines where it meets the main roof — the highest-risk leak areas.', camera: C([22,6,14],[10,2,0],30), highlightedGroups: ['sheathing','valley_metal','gable_ends'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,'turret','dormer','bump_roof'], callouts: [
+        { id: 'co-valley-front', text: 'Valley Line (Front)', details: ['Interior angle','Collects 2x runoff','Highest leak risk'], worldPosition: [11,5,6], anchorPosition: [8.5,2,3] },
+        { id: 'co-valley-rear', text: 'Valley Line (Rear)', details: ['Mirror of front valley','Same flashing requirements'], worldPosition: [11,5,-6], anchorPosition: [8.5,2,-3] },
+      ] },
       { title: 'Garage Hip Roof', instruction: 'The garage uses a 5:12 hip roof. Unlike a gable, all four sides slope — better wind resistance but requires hip ridge flashing.', camera: C([-14,3,14],[-9.5,-1.5,0],30), highlightedGroups: ['garage_roof'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,...HIDE_DETAILS,'sheathing','gable_ends','ridge_cap','valley_metal','ice_barrier','underlayment','drip_edge','step_flashing','fascia_soffit'] },
       { title: 'Turret — Conical Roof', instruction: 'The octagonal turret has a conical roof. Every facet joint requires careful flashing work.', camera: C([8,2,11],[5.5,1.5,6.5],26), highlightedGroups: ['turret'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,...HIDE_DETAILS,'sheathing','garage_roof','dormer','bump_roof','gable_ends','ridge_cap','valley_metal','ice_barrier','underlayment','drip_edge','step_flashing','fascia_soffit'] },
       { title: 'Four Pitches, One House', instruction: 'Review: 8:12 main, 10:12 cross wing, 5:12 garage hip, conical turret. Steeper pitches shed water faster but are harder to work on.', camera: C([26,18,20],[1,0,0],40), highlightedGroups: ['sheathing','gable_ends','ridge_cap','garage_roof','turret','dormer','bump_roof'], hiddenGroups: PH('framing_roof') },
@@ -271,12 +290,20 @@ const M06: CurriculumModule = {
       { title: 'Roof Slopes', instruction: 'Two sloped planes descend from ridge to eaves. 8:12 pitch = 8 inches of rise per 12 inches of horizontal run.', camera: C([16,5,18],[0,1.5,0],32), highlightedGroups: ['sheathing'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,'walls_1st'] },
       { title: 'Gable Ends', instruction: 'Triangular wall sections between wall top and roof slopes. Clad in board-and-batten here for accent.', camera: C([-16,3,6],[-7,1.5,0],28), highlightedGroups: ['gable_ends'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,'walls_1st','sheathing','ridge_cap'] },
       { title: 'Eaves', instruction: 'The lower edge where roof overhangs the wall. Fascia covers rafter tails, soffit closes the underside. This protects walls from rain.', camera: C([8,-2,9],[0,0.3,4.5],24), highlightedGroups: ['fascia_soffit','gutters','drip_edge'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,'walls_1st'] },
-      { title: 'Exploded Layer View', instruction: 'Layers from bottom to top: sheathing → underlayment → ice barrier → flashing → shingles → ridge cap.', camera: C([14,10,14],[0,5,0],36), explodeOffset: 1.5, hiddenGroups: [...HIDE_ALL_BUT_ROOF,...HIDE_DETAILS,'walls_1st','walls_2nd','turret','dormer','garage_roof','bump_roof'] },
+      { title: 'Exploded Layer View', instruction: 'Layers from bottom to top: sheathing → underlayment → ice barrier → flashing → shingles → ridge cap.', camera: C([14,10,14],[0,5,0],36), explodeOffset: 1.5, hiddenGroups: [...HIDE_ALL_BUT_ROOF,...HIDE_DETAILS,'walls_1st','walls_2nd','turret','dormer','garage_roof','bump_roof'], callouts: [
+        { id: 'co-sheathing', text: 'Roof Sheathing', details: ['7/16" OSB or plywood','Structural deck','H-clips at unsupported edges'], worldPosition: [-6,4,6], anchorPosition: [0,2,3] },
+        { id: 'co-underlayment', text: 'Underlayment', details: ['Synthetic or #30 felt','Secondary water barrier','Overlaps 4" min at seams'], worldPosition: [6,7,6], anchorPosition: [0,4.5,2] },
+        { id: 'co-ice-barrier', text: 'Ice & Water Shield', details: ['Self-adhering membrane','Eaves + valleys','24" past interior wall line'], worldPosition: [-6,9,4], anchorPosition: [0,7,1] },
+        { id: 'co-ridge-cap-layer', text: 'Ridge Cap', details: ['Covers ridge vent','Last piece installed','Sheds water both directions'], worldPosition: [6,12,2], anchorPosition: [0,9.5,0] },
+      ] },
     ]},
     { slug: 'valley-framing', title: 'Valley Framing & Water Management', objective: 'Understand how valleys concentrate water and why they are the highest-risk areas.', type: 'learn', durationMinutes: 15, steps: [
       { title: 'Where Valleys Form', instruction: 'A valley forms wherever two roof slopes meet at an interior angle. This house has two valleys — front and back — where the cross wing meets the main roof.', camera: C([18,4,12],[8,1.5,1],30), highlightedGroups: ['valley_metal','sheathing'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,'turret','dormer','bump_roof'] },
       { title: 'Water Volume Doubles', instruction: 'Every valley collects runoff from two separate drainage areas. In heavy rain, valleys carry 2-3x the water volume of normal eave sections.', camera: C([14,3,10],[8,0.5,1],26), highlightedGroups: ['valley_metal'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,'turret','dormer','bump_roof'] },
-      { title: 'Valley Protection Stack', instruction: 'Ice barrier membrane → valley metal → shingle cutback. Miss any layer or reverse the lap and water enters the assembly.', camera: C([16,8,8],[8,2,0],32), explodeOffset: 1.0, highlightedGroups: ['ice_barrier','valley_metal','sheathing'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,...HIDE_DETAILS,'turret','dormer','bump_roof','ridge_cap','fascia_soffit','step_flashing','drip_edge'], codeRefs: [{ family: 'IRC', section: 'R905.2.7.1', summary: 'Ice barrier required at eaves in cold climates (mean Jan temp ≤ 25°F). NRCA best practice extends this to valleys — 24" from centerline each side.' },{ family: 'IRC', section: 'R905.2.8.2', summary: 'Valley lining: 36" wide mineral-surfaced roll roofing or min 24-gauge metal. Open valley exposure min 4" at ridge.' }] },
+      { title: 'Valley Protection Stack', instruction: 'Ice barrier membrane → valley metal → shingle cutback. Miss any layer or reverse the lap and water enters the assembly.', camera: C([16,8,8],[8,2,0],32), explodeOffset: 1.0, highlightedGroups: ['ice_barrier','valley_metal','sheathing'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,...HIDE_DETAILS,'turret','dormer','bump_roof','ridge_cap','fascia_soffit','step_flashing','drip_edge'], codeRefs: [{ family: 'IRC', section: 'R905.2.7.1', summary: 'Ice barrier required at eaves in cold climates (mean Jan temp ≤ 25°F). NRCA best practice extends this to valleys — 24" from centerline each side.' },{ family: 'IRC', section: 'R905.2.8.2', summary: 'Valley lining: 36" wide mineral-surfaced roll roofing or min 24-gauge metal. Open valley exposure min 4" at ridge.' }], callouts: [
+        { id: 'co-valley-ice', text: 'Ice & Water Shield', details: ['36" wide minimum','Self-adhering to deck','First layer over sheathing'], worldPosition: [13,6,5], anchorPosition: [8.5,2,2.5] },
+        { id: 'co-valley-metal', text: 'Valley Metal', details: ['24-ga galvanized min','W-crimp center bead','No fasteners in flow channel'], worldPosition: [13,9,3], anchorPosition: [8.5,4.5,1.5] },
+      ] },
       { title: 'Dead Valley', instruction: 'The rear bump-out creates a dead valley where its shed roof meets the main wall. Water and debris collect here. Without a cricket or diverter, this fails within 5-10 years.', camera: C([-8,-1,-8],[-5,-2.2,-5.5],28), highlightedGroups: ['bump_roof','walls_2nd'], hiddenGroups: [...HIDE_ALL_BUT_ROOF,...HIDE_DETAILS,'walls_1st','turret','dormer','garage_roof','sheathing','ridge_cap','valley_metal','ice_barrier','drip_edge','step_flashing','fascia_soffit','underlayment','gable_ends'] },
     ]},
     { slug: 'roof-wall-transitions', title: 'Roof-to-Wall Transitions', objective: 'Learn step flashing, kickout flashing, and why these junctions fail.', type: 'learn', durationMinutes: 12, steps: [

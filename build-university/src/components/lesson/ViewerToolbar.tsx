@@ -10,11 +10,14 @@ interface ViewerToolbarProps {
   visibilityGroups: string[]
   hiddenGroups: string[]
   onToggleGroup: (group: string) => void
+  blueprintMode?: boolean
+  onBlueprintToggle?: () => void
 }
 
 export default function ViewerToolbar({
   explodedOffset, onExplodeChange, onCodeToggle, codeOpen,
   visibilityGroups, hiddenGroups, onToggleGroup,
+  blueprintMode = false, onBlueprintToggle,
 }: ViewerToolbarProps) {
   const [layersExpanded, setLayersExpanded] = useState(false)
 
@@ -41,6 +44,22 @@ export default function ViewerToolbar({
           aria-label="Explode view offset"
         />
       </div>
+
+      {/* Blueprint mode toggle */}
+      {onBlueprintToggle && (
+        <button
+          onClick={onBlueprintToggle}
+          aria-label="Toggle blueprint mode"
+          aria-pressed={blueprintMode}
+          className={`bg-gray-1000 backdrop-blur-md border shadow-sm rounded-lg px-3 py-2 text-xs text-left transition-all ${
+            blueprintMode
+              ? 'border-blue-400 text-blue-100 bg-[#1a2a5c]'
+              : 'border-gray-200/50 text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          Blueprint {blueprintMode ? 'ON' : ''}
+        </button>
+      )}
 
       {/* Code references toggle */}
       <button

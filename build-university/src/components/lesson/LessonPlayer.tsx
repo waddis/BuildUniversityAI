@@ -38,6 +38,7 @@ export default function LessonPlayer({ lesson, steps, codeReferences = [] }: Les
   const [hiddenGroups, setHiddenGroups] = useState<string[]>([])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [clickedMesh, setClickedMesh] = useState<string | null>(null)
+  const [blueprintMode, setBlueprintMode] = useState(false)
 
   const step = steps[currentStep]
 
@@ -91,6 +92,7 @@ export default function LessonPlayer({ lesson, steps, codeReferences = [] }: Les
           hiddenGroups={effectiveHidden}
           onMeshClick={handleMeshClick}
           explodedOffset={explodedOffset}
+          blueprintMode={blueprintMode}
         />
 
         {/* Toolbar overlay */}
@@ -102,6 +104,8 @@ export default function LessonPlayer({ lesson, steps, codeReferences = [] }: Les
           visibilityGroups={DEFAULT_GROUPS}
           hiddenGroups={hiddenGroups}
           onToggleGroup={handleToggleGroup}
+          blueprintMode={blueprintMode}
+          onBlueprintToggle={() => setBlueprintMode(b => !b)}
         />
 
         {/* Clicked mesh info tooltip */}

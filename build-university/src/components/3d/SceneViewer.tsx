@@ -1,9 +1,19 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import type { CameraPreset } from '@/types'
 import { generateComplexHouse } from '@/lib/3d/complex-house'
+import CalloutOverlay from './CalloutOverlay'
+import type { Callout } from './CalloutOverlay'
+
+export interface CalloutInput {
+  id: string
+  text: string
+  details?: string[]
+  worldPosition: [number, number, number]
+  anchorPosition: [number, number, number]
+}
 
 interface SceneViewerProps {
   cameraPreset?: CameraPreset | null
@@ -11,6 +21,8 @@ interface SceneViewerProps {
   hiddenGroups?: string[]
   onMeshClick?: (meshKey: string) => void
   explodedOffset?: number
+  blueprintMode?: boolean
+  callouts?: CalloutInput[]
 }
 
 interface MeshEntry {
@@ -20,6 +32,7 @@ interface MeshEntry {
   baseY: number
   explodeOrder: number
   originalColor: THREE.Color | null
+  originalMaterial: THREE.Material | null
 }
 
 const HIGHLIGHT_COLOR = new THREE.Color(0x2563eb)  // blue-600 to match UI accent
@@ -40,14 +53,24 @@ function lerpVec3(v: THREE.Vector3, target: THREE.Vector3, rate: number, dt: num
   v.z = smootherp(v.z, target.z, rate, dt)
 }
 
+// Blueprint mode colors
+const BLUEPRINT_BG = new THREE.Color(0x1a2a5c)
+const BLUEPRINT_FOG = new THREE.Color(0x1a2a5c)
+const BLUEPRINT_WIRE_COLOR = new THREE.Color(0xc8deff) // light blue-white wireframe
+const BLUEPRINT_GRID_COLOR = 0xffffff
+
 export default function SceneViewer({
   cameraPreset,
   highlightedGroups,
   hiddenGroups,
   onMeshClick,
   explodedOffset = 0,
+  blueprintMode = false,
+  callouts: calloutInputs,
 }: SceneViewerProps) {
   const mountRef = useRef<HTMLDivElement>(null)
+  const [cameraState, setCameraState] = useState<THREE.PerspectiveCamera | null>(null)
+  const [rendererDomState, setRendererDomState] = useState<HTMLCanvasElement | null>(null)
   const internalsRef = useRef<{
     camera: THREE.PerspectiveCamera
     renderer: THREE.WebGLRenderer
@@ -64,6 +87,20 @@ export default function SceneViewer({
     userInteracting: boolean
     lastInteraction: number
     controls: { update: () => void; target: THREE.Vector3; dispose: () => void; enabled: boolean } | null
+    // Blueprint mode transition
+    blueprintT: number // 0 = realistic, 1 = full blueprint
+    blueprintWireMaterials: Map<THREE.Mesh, THREE.MeshBasicMaterial>
+    scene: THREE.Scene
+    skyDome: THREE.Mesh
+    ground: THREE.Mesh
+    grid: THREE.GridHelper
+    sun: THREE.DirectionalLight
+    skyFill: THREE.DirectionalLight
+    bounce: THREE.DirectionalLight
+    originalBg: THREE.Color
+    originalFogColor: THREE.Color
+    originalFogNear: number
+    originalFogFar: number
   } | null>(null)
 
   const onClickRef = useRef(onMeshClick)
@@ -74,6 +111,8 @@ export default function SceneViewer({
   hiddenRef.current = hiddenGroups
   const explodeRef = useRef(explodedOffset)
   explodeRef.current = explodedOffset
+  const blueprintRef = useRef(blueprintMode)
+  blueprintRef.current = blueprintMode
 
   // Camera preset changes trigger cinematic transition
   useEffect(() => {
@@ -226,7 +265,7 @@ export default function SceneViewer({
       if (def.receiveShadow) mesh.receiveShadow = true
       scene.add(mesh)
       const origColor = (def.material instanceof THREE.MeshStandardMaterial) ? def.material.color.clone() : null
-      meshes.push({ mesh, group: def.group, meshKey: def.meshKey, baseY: def.position[1], explodeOrder: def.explodeOrder, originalColor: origColor })
+      meshes.push({ mesh, group: def.group, meshKey: def.meshKey, baseY: def.position[1], explodeOrder: def.explodeOrder, originalColor: origColor, originalMaterial: def.material })
     })
 
     // Apply initial visibility IMMEDIATELY (before animation loop starts)
@@ -254,6 +293,18 @@ export default function SceneViewer({
     const targetCamPos = new THREE.Vector3(28, 16, 26)
     const targetCamTarget = houseCenter.clone()
 
+    // Pre-create wireframe materials for blueprint mode
+    const blueprintWireMaterials = new Map<THREE.Mesh, THREE.MeshBasicMaterial>()
+    meshes.forEach(entry => {
+      const wireMat = new THREE.MeshBasicMaterial({
+        color: BLUEPRINT_WIRE_COLOR,
+        wireframe: true,
+        transparent: true,
+        opacity: 1,
+      })
+      blueprintWireMaterials.set(entry.mesh, wireMat)
+    })
+
     internalsRef.current = {
       camera, renderer, meshes, targetCamPos, targetCamTarget,
       targetFov: 35,
@@ -263,7 +314,25 @@ export default function SceneViewer({
       startFov: 35,
       userInteracting: false, lastInteraction: 0,
       controls: null,
+      // Blueprint
+      blueprintT: 0,
+      blueprintWireMaterials,
+      scene,
+      skyDome,
+      ground,
+      grid,
+      sun,
+      skyFill,
+      bounce,
+      originalBg: new THREE.Color(0x000000), // scene has no solid bg by default (uses sky dome)
+      originalFogColor: new THREE.Color(0xdde6ee),
+      originalFogNear: 50,
+      originalFogFar: 130,
     }
+
+    // Expose camera and renderer DOM for callout overlay
+    setCameraState(camera)
+    setRendererDomState(renderer.domElement)
 
     // Click handler
     const handleClick = (e: MouseEvent) => {
@@ -407,6 +476,103 @@ export default function SceneViewer({
             entry.mesh.position.y = entry.baseY + entry.explodeOrder * explode
           })
 
+          // ── Blueprint mode transition ──
+          const bpTarget = blueprintRef.current ? 1 : 0
+          const bpSpeed = 3.0 // transition speed (higher = faster, ~0.5s at 3.0)
+          r.blueprintT = r.blueprintT + (bpTarget - r.blueprintT) * Math.min(bpSpeed * dt, 1)
+          // Snap when very close
+          if (Math.abs(r.blueprintT - bpTarget) < 0.005) r.blueprintT = bpTarget
+
+          const bpT = r.blueprintT
+
+          if (bpT > 0) {
+            // Interpolate background
+            if (!scene.background || !(scene.background instanceof THREE.Color)) {
+              scene.background = new THREE.Color()
+            }
+            ;(scene.background as THREE.Color).copy(r.originalBg).lerp(BLUEPRINT_BG, bpT)
+
+            // Fade sky dome out
+            const skyMat = skyDome.material as THREE.MeshBasicMaterial
+            skyMat.opacity = 1 - bpT
+            skyMat.transparent = bpT > 0
+
+            // Fade ground out
+            const groundMat = ground.material as THREE.MeshStandardMaterial
+            groundMat.opacity = 1 - bpT
+            groundMat.transparent = bpT > 0
+
+            // Fade fog to blueprint blue
+            if (scene.fog instanceof THREE.Fog) {
+              scene.fog.color.copy(r.originalFogColor).lerp(BLUEPRINT_FOG, bpT)
+              scene.fog.near = r.originalFogNear + (200 - r.originalFogNear) * bpT
+              scene.fog.far = r.originalFogFar + (300 - r.originalFogFar) * bpT
+            }
+
+            // Dim lights
+            sun.intensity = 2.5 * (1 - bpT * 0.9)
+            skyFill.intensity = 0.8 * (1 - bpT)
+            bounce.intensity = 0.3 * (1 - bpT)
+
+            // Disable shadows in blueprint
+            renderer.shadowMap.enabled = bpT < 0.5
+
+            // Grid to white on blue
+            const gridMats = Array.isArray(grid.material) ? grid.material : [grid.material]
+            gridMats.forEach(gm => {
+              if (gm instanceof THREE.LineBasicMaterial) {
+                gm.color.set(0xd0d8d0).lerp(new THREE.Color(BLUEPRINT_GRID_COLOR), bpT)
+                gm.opacity = 0.3 + bpT * 0.4
+              }
+            })
+
+            // Swap materials on meshes
+            meshes.forEach(entry => {
+              if (!entry.mesh.visible) return
+              const wireMat = r.blueprintWireMaterials.get(entry.mesh)
+              if (!wireMat) return
+
+              if (bpT > 0.5) {
+                // Blueprint: show wireframe material
+                if (entry.mesh.material !== wireMat) {
+                  entry.mesh.material = wireMat
+                }
+                wireMat.opacity = Math.min(bpT * 2 - 0.5, 1) // fade in from 0.5→1
+              } else {
+                // Realistic: restore original material
+                if (entry.originalMaterial && entry.mesh.material !== entry.originalMaterial) {
+                  entry.mesh.material = entry.originalMaterial
+                }
+              }
+            })
+
+            // Tone mapping off in blueprint
+            renderer.toneMapping = bpT > 0.5 ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping
+          } else {
+            // Fully realistic — ensure everything is restored
+            scene.background = null
+            const skyMat = skyDome.material as THREE.MeshBasicMaterial
+            skyMat.opacity = 1; skyMat.transparent = false
+            const groundMat = ground.material as THREE.MeshStandardMaterial
+            groundMat.opacity = 1; groundMat.transparent = false
+            renderer.shadowMap.enabled = true
+            renderer.toneMapping = THREE.ACESFilmicToneMapping
+            sun.intensity = 2.5
+            skyFill.intensity = 0.8
+            bounce.intensity = 0.3
+            if (scene.fog instanceof THREE.Fog) {
+              scene.fog.color.copy(r.originalFogColor)
+              scene.fog.near = r.originalFogNear
+              scene.fog.far = r.originalFogFar
+            }
+            // Restore original materials if needed
+            meshes.forEach(entry => {
+              if (entry.originalMaterial && entry.mesh.material !== entry.originalMaterial) {
+                entry.mesh.material = entry.originalMaterial
+              }
+            })
+          }
+
           oc.update()
           renderer.render(scene, camera)
         }
@@ -451,6 +617,11 @@ export default function SceneViewer({
         }
       })
 
+      // Dispose blueprint wireframe materials
+      if (internalsRef.current) {
+        internalsRef.current.blueprintWireMaterials.forEach(mat => mat.dispose())
+      }
+
       // Dispose canvas textures
       skyTex.dispose()
       groundTex.dispose()
@@ -465,5 +636,21 @@ export default function SceneViewer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return <div ref={mountRef} className="w-full h-full" style={{ touchAction: 'none' }} />
+  // Convert callout inputs to Callout objects (all visible when provided)
+  const callouts: Callout[] = (calloutInputs ?? []).map(c => ({
+    ...c,
+    visible: true,
+  }))
+
+  return (
+    <div ref={mountRef} className="w-full h-full relative" style={{ touchAction: 'none' }}>
+      {callouts.length > 0 && cameraState && rendererDomState && (
+        <CalloutOverlay
+          callouts={callouts}
+          camera={cameraState}
+          rendererDom={rendererDomState}
+        />
+      )}
+    </div>
+  )
 }

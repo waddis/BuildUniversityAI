@@ -3,7 +3,7 @@
 import { use, useState, useCallback, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { getModule, getLesson, type CurriculumLesson, type CurriculumModule } from '@/lib/content/curriculum'
+import { getModule, getLesson, type CurriculumLesson, type CurriculumModule, type CalloutData } from '@/lib/content/curriculum'
 import StepPanel from '@/components/lesson/StepPanel'
 import StepTimeline from '@/components/lesson/StepTimeline'
 import CodeDrawer from '@/components/lesson/CodeDrawer'
@@ -136,11 +136,18 @@ function LearnMode({ lesson, mod }: { lesson: CurriculumLesson; mod: CurriculumM
   const [hiddenGroups, setHiddenGroups] = useState<string[]>([])
   const [completed, setCompleted] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [blueprintMode, setBlueprintMode] = useState(false)
 
   const step = steps[currentStep]
   const explodedOffset = manualExplode ?? step?.exploded_state?.offset ?? 0
   const effectiveHidden = [...new Set([...(step?.hidden_groups ?? []), ...hiddenGroups])]
   const stepCodeRefs = step?.code_reference_ids?.length ? codeRefs.filter(r => step.code_reference_ids.includes(r.id)) : []
+
+  // Get callouts for current step from raw lesson data
+  const stepCallouts: CalloutData[] = useMemo(() => {
+    if (!lesson.steps || currentStep >= lesson.steps.length) return []
+    return lesson.steps[currentStep]?.callouts ?? []
+  }, [lesson.steps, currentStep])
 
   // Auto-collapse sidebar on small screens
   useEffect(() => {
@@ -206,6 +213,20 @@ function LearnMode({ lesson, mod }: { lesson: CurriculumLesson; mod: CurriculumM
           </div>
           <span className="text-[12px] font-semibold text-[var(--primary)]">{stepPct}% Complete</span>
           <div className="h-6 w-px bg-[var(--surface-high)] mx-2" />
+          <button
+            onClick={() => setBlueprintMode(b => !b)}
+            aria-label="Toggle blueprint mode"
+            aria-pressed={blueprintMode}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
+              blueprintMode
+                ? 'bg-[#1a2a5c] text-blue-200 border border-blue-400/50'
+                : 'text-[var(--on-surface)] opacity-40 hover:opacity-70 hover:bg-[var(--surface-low)] border border-transparent'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">architecture</span>
+            Blueprint
+          </button>
+          <div className="h-6 w-px bg-[var(--surface-high)] mx-2" />
           <span className="material-symbols-outlined text-[var(--on-surface)] opacity-30 p-2 hover:bg-[var(--surface-low)] rounded-full cursor-pointer text-[20px]">account_circle</span>
         </div>
       </nav>
@@ -222,6 +243,8 @@ function LearnMode({ lesson, mod }: { lesson: CurriculumLesson; mod: CurriculumM
             highlightedGroups={step?.highlighted_groups}
             hiddenGroups={effectiveHidden}
             explodedOffset={explodedOffset}
+            blueprintMode={blueprintMode}
+            callouts={stepCallouts}
           />
         </div>
 
