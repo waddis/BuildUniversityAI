@@ -9,7 +9,7 @@ export default function StepTimeline({ totalSteps, currentStep, onStepClick }: S
       {Array.from({ length: totalSteps }, (_, i) => (
         <button key={i} onClick={() => onStepClick(i)} aria-label={`Step ${i + 1}`}
           className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-            i < currentStep ? 'bg-[var(--primary)] opacity-40' : i === currentStep ? 'gradient-primary shadow-[0_0_8px_rgba(0,78,159,0.3)]' : 'bg-[var(--surface-high)] hover:bg-[var(--surface-highest)]'
+            i < currentStep ? 'bg-[#FF8C00] opacity-40' : i === currentStep ? 'bg-[#FF8C00] shadow-[0_0_8px_rgba(255,140,0,0.3)]' : 'bg-[#353534] hover:bg-[#2a2a2a]'
           }`} />
       ))}
     </div>

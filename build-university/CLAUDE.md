@@ -34,7 +34,7 @@ Every lesson answers five questions:
 
 ## Tech Stack
 - **Framework:** Next.js 16 (App Router, TypeScript, React 19)
-- **Styling:** Tailwind CSS v4 — dark theme, bg-[#080810], amber-500 accents
+- **Styling:** Tailwind CSS v4 — "Architectural Void" dark theme, bg-[#131313], #FF8C00 orange accents, Space Grotesk + Inter
 - **Database & Auth:** Supabase (PostgreSQL + RLS)
 - **Payments:** Stripe (subscriptions, webhooks)
 - **AI:** Anthropic Claude API (claude-opus-4-6) via @anthropic-ai/sdk
@@ -101,7 +101,7 @@ src/
     selection/SelectionManager.tsx   # Raycaster click/hover → Zustand selection
   app/
     page.tsx                         # Landing page
-    editor/page.tsx                  # Full-screen BIM editor (toolbar + tree + viewport + inspector)
+    
     lesson/[slug]/page.tsx           # Lesson player (3D + steps + code refs)
     inspect/[slug]/page.tsx          # Inspection challenge (find defects)
     quiz/[slug]/page.tsx             # Quiz mode (MC + T/F + scoring)
@@ -155,17 +155,23 @@ STITCH_API_KEY=...              # Stitch by Google — UI generation
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-## Design Rules
-- Light theme: bg-[var(--surface)] (#f9f9fb)
-- Primary: #004e9f (blue), gradient-primary for CTAs
-- Surface hierarchy: --surface, --surface-low, --surface-high, --elevated
-- Glass panels with shadow-ambient, shadow-ambient-sm
-- Text: var(--on-surface) with opacity levels (opacity-40, opacity-35, opacity-25)
-- Cards: bg-white, shadow-ambient-sm, rounded-2xl
-- Rounded corners: rounded-xl or rounded-2xl
+## Design Rules — "Architectural Void" Dark Theme
+- Background: #131313 (deep charcoal, NOT pure black)
+- Surfaces: --surface (#131313), --surface-low (#1c1b1b), --surface-container (#201f1f), --surface-high (#2a2a2a), --surface-highest (#353534)
+- Primary: #FF8C00 (construction orange) — CTAs, active states, gradient-primary (#FF8C00 → #ffb77d)
+- Primary glow text: #ffb77d (warm amber)
+- Secondary (data): #82CFFF (blueprint blue)
+- Tertiary: #ADCBDA (cool grey-blue)
+- On-surface text: #e5e2e1 (warm off-white, NEVER pure white) with opacity levels (/40, /35, /30)
+- Outline/ghost borders: #564334 at 15% opacity — NO 1px solid borders, use tonal surface shifts
+- Glass panels: surface-high at 70% opacity + 20px blur
+- Shadows: on-surface at 4% opacity, 32px blur
+- Headlines/labels: Space Grotesk (font-headline, font-label classes)
+- Body: Inter
+- Cards: bg-[var(--surface-container)], rounded-2xl, ghost border via inset box-shadow
 - No emojis in UI
 - Framer Motion for animations
-- Apple/Stitch-inspired design system
+- Stitch-inspired dark design system
 - Full-screen layout for lesson/inspect views (fixed inset-0)
 
 ## Jurisdiction Service (LIVE)

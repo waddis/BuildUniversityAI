@@ -24,19 +24,20 @@ export default function CodeDrawer({ references, open, onClose }: CodeDrawerProp
 
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-md border-t border-gray-200 max-h-[45%] flex flex-col animate-[slideUp_0.25s_ease-out]"
+      className="absolute bottom-0 left-0 right-0 z-20 max-h-[45%] flex flex-col animate-[slideUp_0.25s_ease-out]"
+      style={{ background: 'rgba(42,42,42,0.70)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid rgba(86,67,52,0.15)' }}
       role="dialog"
       aria-modal="true"
       aria-label="Code references"
     >
-      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-transparent">
-        <h3 className="text-sm font-semibold text-blue-600">Code References</h3>
+      <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid rgba(86,67,52,0.15)' }}>
+        <h3 className="text-sm font-semibold text-[#FF8C00]">Code References</h3>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] text-gray-300">Esc to close</span>
+          <span className="text-[10px] text-[#e5e2e1] opacity-25">Esc to close</span>
           <button
             onClick={onClose}
             aria-label="Close code references"
-            className="w-6 h-6 flex items-center justify-center rounded-md bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-gray-900 text-xs transition-colors"
+            className="w-6 h-6 flex items-center justify-center rounded-md bg-[#353534] hover:bg-[#2a2a2a] text-[#e5e2e1] opacity-50 hover:opacity-80 text-xs transition-colors"
           >
             X
           </button>
@@ -44,20 +45,20 @@ export default function CodeDrawer({ references, open, onClose }: CodeDrawerProp
       </div>
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {references.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-4">No code references for this step</p>
+          <p className="text-[#e5e2e1] opacity-30 text-sm text-center py-4">No code references for this step</p>
         ) : (
           references.map(ref => (
-            <div key={ref.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 animate-[fadeIn_0.2s_ease-out]">
+            <div key={ref.id} className="bg-[#1c1b1b] rounded-lg p-4 animate-[fadeIn_0.2s_ease-out]" style={{ border: '1px solid rgba(86,67,52,0.15)' }}>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-blue-600 font-mono text-xs font-bold bg-blue-50 px-1.5 py-0.5 rounded">{ref.code_family}</span>
-                <span className="text-gray-600 font-mono text-xs">{ref.code_section}</span>
+                <span className="text-[#FF8C00] font-mono text-xs font-bold bg-[#FF8C00]/10 px-1.5 py-0.5 rounded">{ref.code_family}</span>
+                <span className="text-[#e5e2e1] opacity-50 font-mono text-xs">{ref.code_section}</span>
               </div>
-              <h4 className="font-semibold text-sm mb-1">{ref.title}</h4>
-              <p className="text-gray-500 text-xs leading-relaxed">{ref.short_summary}</p>
+              <h4 className="font-semibold text-sm text-[#e5e2e1] mb-1">{ref.title}</h4>
+              <p className="text-[#e5e2e1] opacity-40 text-xs leading-relaxed">{ref.short_summary}</p>
               {ref.long_explanation && (
                 <details className="mt-2">
-                  <summary className="text-blue-600/60 text-xs cursor-pointer hover:text-blue-600">Full explanation</summary>
-                  <p className="text-gray-500 text-xs leading-relaxed mt-2">{ref.long_explanation}</p>
+                  <summary className="text-[#FF8C00]/60 text-xs cursor-pointer hover:text-[#FF8C00]">Full explanation</summary>
+                  <p className="text-[#e5e2e1] opacity-35 text-xs leading-relaxed mt-2">{ref.long_explanation}</p>
                 </details>
               )}
             </div>
