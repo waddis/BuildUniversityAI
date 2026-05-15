@@ -52,7 +52,7 @@ export default function HomePage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center px-6 pt-32 pb-36 text-center overflow-hidden">
+      <section className="relative flex flex-col items-center justify-center px-6 pt-32 pb-36 text-center overflow-hidden animate-[fadeIn_0.5s_ease-out]">
         {/* Ambient glow */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 40% 40% at 50% 35%, rgba(255,140,0,0.06) 0%, transparent 70%)' }} />
 
@@ -92,7 +92,7 @@ export default function HomePage() {
       </section>
 
       {/* Features — Engineered for Accuracy */}
-      <section id="features" className="px-6 py-24 max-w-6xl mx-auto">
+      <section id="features" className="px-6 py-24 max-w-6xl mx-auto animate-[fadeIn_0.4s_ease-out]">
         <div className="text-center mb-16">
           <p className="text-[#FF8C00] text-[11px] uppercase tracking-[0.2em] font-label mb-4">Purpose-Built Platform</p>
           <h2 className="font-headline text-3xl sm:text-4xl font-bold tracking-tight text-[#e5e2e1]">Engineered for Accuracy</h2>
@@ -184,7 +184,12 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="px-6 py-16 text-center" style={{ borderTop: '1px solid rgba(86,67,52,0.15)' }}>
         <p className="font-headline text-[#e5e2e1]/20 text-lg tracking-tight">Build it right, the first time.</p>
-        <p className="text-[#e5e2e1]/10 text-[12px] font-label mt-3">BuildRight 3D</p>
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <Link href="/privacy" className="text-[#e5e2e1]/20 hover:text-[#e5e2e1]/50 text-[12px] font-label transition-colors">Privacy</Link>
+          <span className="text-[#e5e2e1]/10 text-[12px]">|</span>
+          <Link href="/terms" className="text-[#e5e2e1]/20 hover:text-[#e5e2e1]/50 text-[12px] font-label transition-colors">Terms</Link>
+        </div>
+        <p className="text-[#e5e2e1]/10 text-[12px] font-label mt-3">&copy; 2026 Resolution Claims Consulting LLC. All rights reserved.</p>
       </footer>
     </div>
   )

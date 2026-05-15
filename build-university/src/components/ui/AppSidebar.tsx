@@ -74,7 +74,7 @@ export default function AppSidebar({ currentModule, progress }: { currentModule?
 
       {/* Bottom links */}
       <div className="px-5 pt-3" style={{ borderTop: '1px solid rgba(86,67,52,0.12)' }}>
-        <Link href="/login" className="flex items-center gap-3 text-[#e5e2e1]/30 p-2 hover:bg-[var(--surface-container)] rounded-lg text-[13px] font-label transition-colors">
+        <Link href="/account" className="flex items-center gap-3 text-[#e5e2e1]/30 p-2 hover:bg-[var(--surface-container)] rounded-lg text-[13px] font-label transition-colors">
           <Icon name="settings" /><span>Account</span>
         </Link>
         <Link href="/" className="flex items-center gap-3 text-red-400/60 p-2 hover:bg-red-400/5 rounded-lg text-[13px] font-label transition-colors">

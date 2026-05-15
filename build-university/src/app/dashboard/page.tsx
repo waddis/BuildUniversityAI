@@ -1,28 +1,56 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import TopNav from '@/components/ui/TopNav'
 import AppSidebar from '@/components/ui/AppSidebar'
-
-const STATS = [
-  { value: '128', label: 'Assemblies', color: '#FF8C00' },
-  { value: '04', label: 'Code Violations', color: '#82CFFF' },
-  { value: '42.5h', label: 'Hours Training', color: '#ADCBDA' },
-]
 
 const SIDE_CARDS = [
   { title: 'Adjuster Basics: Hail Damage', desc: 'Field inspection protocol for storm damage documentation.', tag: 'Course', lessons: 9 },
   { title: 'Commercial Hotel Model', desc: 'Mediterranean Revival — 5 wings, cupolas, BUR + tile roofs, 900+ parts.', tag: 'Commercial', lessons: 0, href: '/commercial' },
 ]
 
+function useTrainingProgress() {
+  const [completedCount, setCompletedCount] = useState(0)
+  const [inProgress, setInProgress] = useState<string | null>(null)
+  const [hoursTraining, setHoursTraining] = useState('0h')
+
+  useEffect(() => {
+    try {
+      const completedRaw = localStorage.getItem('buildright_completed')
+      const completed: string[] = completedRaw ? JSON.parse(completedRaw) : []
+      setCompletedCount(completed.length)
+      // Average 12 minutes per lesson
+      const totalMinutes = completed.length * 12
+      const hours = totalMinutes / 60
+      setHoursTraining(hours >= 1 ? `${hours.toFixed(1)}h` : `${totalMinutes}m`)
+
+      const progressRaw = localStorage.getItem('buildright_progress')
+      if (progressRaw) setInProgress(progressRaw)
+    } catch {
+      // localStorage unavailable or malformed
+    }
+  }, [])
+
+  return { completedCount, inProgress, hoursTraining }
+}
+
 export default function DashboardPage() {
+  const { completedCount, inProgress, hoursTraining } = useTrainingProgress()
+
+  const STATS = [
+    { value: '128', label: 'Assemblies', color: '#FF8C00' },
+    { value: '04', label: 'Code Violations', color: '#82CFFF' },
+    { value: hoursTraining, label: 'Hours Training', color: '#ADCBDA' },
+  ]
+
   return (
     <div className="min-h-screen bg-[#131313]">
       <TopNav />
       <AppSidebar />
 
       <main className="ml-0 md:ml-64 mt-16 overflow-y-auto min-h-[calc(100vh-4rem)]">
-        <div className="px-8 py-8 max-w-6xl">
+        <div className="px-8 py-8 max-w-6xl animate-[fadeIn_0.4s_ease-out]">
 
           {/* Stats row */}
           <div className="flex gap-4 mb-8 animate-[fadeIn_0.4s_ease-out]">
@@ -33,6 +61,34 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+
+          {/* Resume / completed cards */}
+          {(inProgress || completedCount > 0) && (
+            <div className="flex flex-wrap gap-4 mb-8 animate-[fadeIn_0.45s_ease-out]">
+              {inProgress && (
+                <Link href={`/train/${inProgress}`} className="flex items-center gap-4 bg-[var(--surface-container)] rounded-xl px-6 py-4 hover:bg-[var(--surface-high)] transition-colors group" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.12)' }}>
+                  <div className="w-10 h-10 rounded-xl bg-[#FF8C00]/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[#FF8C00] text-[20px]">play_circle</span>
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#e5e2e1] group-hover:text-[#FF8C00] transition-colors">Continue where you left off</div>
+                    <div className="text-[11px] text-[#e5e2e1]/30 mt-0.5">Resume your current lesson</div>
+                  </div>
+                </Link>
+              )}
+              {completedCount > 0 && (
+                <div className="flex items-center gap-4 bg-[var(--surface-container)] rounded-xl px-6 py-4" style={{ boxShadow: 'inset 0 0 0 1px rgba(86,67,52,0.12)' }}>
+                  <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-green-400 text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-[#e5e2e1]">{completedCount} lesson{completedCount !== 1 ? 's' : ''} completed</div>
+                    <div className="text-[11px] text-[#e5e2e1]/30 mt-0.5">Keep up the momentum</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Main content grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

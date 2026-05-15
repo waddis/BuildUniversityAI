@@ -21,8 +21,9 @@ export default function DamageIndexPage() {
           </Link>
           <h1 className="text-2xl font-bold mt-4">Damage Identification Library</h1>
           <p className="text-white/40 text-sm mt-1 max-w-xl">
-            Interactive 3D walkthroughs showing how to identify, document, and distinguish common damage types.
-            Each scenario includes cinematic camera paths, annotations, and expert narration.
+            Interactive 3D training for independent adjusters. Each residential hail scenario runs a full
+            inspection: cinematic walkthrough, find-the-damage challenge, scope-sheet builder, and a
+            terminology drill.
           </p>
         </div>
       </div>
@@ -63,6 +64,20 @@ export default function DamageIndexPage() {
                 </div>
 
                 <p className="text-white/40 text-xs leading-relaxed mb-3">{scenario.subtitle}</p>
+
+                {/* Phase badges — Walkthrough is always present; interactive phases are tinted */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40">Walkthrough</span>
+                  {scenario.findChallenge && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FF8C00]/10 text-[#FF8C00]/80">Find</span>
+                  )}
+                  {scenario.scopeSheet && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FF8C00]/10 text-[#FF8C00]/80">Scope</span>
+                  )}
+                  {scenario.glossary && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FF8C00]/10 text-[#FF8C00]/80">Terms</span>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-3 text-white/25 text-[10px]">
                   <span>{scenario.stops.length} stops</span>

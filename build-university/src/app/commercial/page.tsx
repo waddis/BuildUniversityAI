@@ -52,7 +52,7 @@ export default function CommercialPage() {
       </div>
 
       {/* Bottom info bar */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 glass-heavy rounded-2xl px-6 py-4 flex items-center gap-5 min-w-[500px]" style={{ border: '1px solid rgba(86,67,52,0.15)' }}>
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 glass-heavy rounded-2xl px-6 py-4 flex items-center gap-5 min-w-[500px] animate-[slideUp_0.4s_ease-out]" style={{ border: '1px solid rgba(86,67,52,0.15)' }}>
         <div className="p-2.5 bg-[#FF8C00] rounded-lg">
           <span className="material-symbols-outlined text-[#131313] text-[20px]">domain</span>
         </div>

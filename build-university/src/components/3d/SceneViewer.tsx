@@ -76,6 +76,9 @@ export default function SceneViewer({
   const mountRef = useRef<HTMLDivElement>(null)
   const [cameraState, setCameraState] = useState<THREE.PerspectiveCamera | null>(null)
   const [rendererDomState, setRendererDomState] = useState<HTMLCanvasElement | null>(null)
+  const [loadProgress, setLoadProgress] = useState(0)
+  const [loadStage, setLoadStage] = useState('Initializing renderer...')
+  const [loadingDone, setLoadingDone] = useState(false)
   const internalsRef = useRef<{
     camera: THREE.PerspectiveCamera
     renderer: THREE.WebGLRenderer
@@ -154,6 +157,9 @@ export default function SceneViewer({
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.3
     mount.appendChild(renderer.domElement)
+
+    setLoadProgress(25)
+    setLoadStage('Building geometry...')
 
     const isWebGL2 = renderer.capabilities.isWebGL2
     const isCommercial = model === 'commercial'
@@ -265,6 +271,9 @@ export default function SceneViewer({
     grid.material.transparent = true
     scene.add(grid)
 
+    setLoadProgress(50)
+    setLoadStage('Generating textures...')
+
     // House model
     const meshes: MeshEntry[] = []
     const houseParts = isCommercial ? generateCommercialHotel(isWebGL2) : generateComplexHouse(isWebGL2)
@@ -278,6 +287,9 @@ export default function SceneViewer({
       const origColor = (def.material instanceof THREE.MeshStandardMaterial) ? def.material.color.clone() : null
       meshes.push({ mesh, group: def.group, meshKey: def.meshKey, baseY: def.position[1], explodeOrder: def.explodeOrder, originalColor: origColor, originalMaterial: def.material })
     })
+
+    setLoadProgress(75)
+    setLoadStage('Compiling shaders...')
 
     // Apply initial visibility IMMEDIATELY (before animation loop starts)
     const initHidden = hiddenRef.current
@@ -381,6 +393,7 @@ export default function SceneViewer({
     let orbitCleanup: (() => void) | null = null
     const frameRef = { current: 0 }
     let lastTime = performance.now()
+    let firstFrameRendered = false
 
     ;(async () => {
       try {
@@ -586,12 +599,26 @@ export default function SceneViewer({
 
           oc.update()
           renderer.render(scene, camera)
+
+          if (!firstFrameRendered) {
+            firstFrameRendered = true
+            setLoadProgress(100)
+            setLoadStage('Ready')
+            setTimeout(() => setLoadingDone(true), 500)
+          }
         }
         animate()
       } catch {
         const animate = () => {
           frameRef.current = requestAnimationFrame(animate)
           renderer.render(scene, camera)
+
+          if (!firstFrameRendered) {
+            firstFrameRendered = true
+            setLoadProgress(100)
+            setLoadStage('Ready')
+            setTimeout(() => setLoadingDone(true), 500)
+          }
         }
         animate()
       }
@@ -655,6 +682,36 @@ export default function SceneViewer({
 
   return (
     <div ref={mountRef} className="w-full h-full relative" style={{ touchAction: 'none' }}>
+      {/* Loading overlay */}
+      {!loadingDone && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center transition-opacity duration-500"
+          style={{ opacity: loadProgress >= 100 ? 0 : 1, pointerEvents: loadProgress >= 100 ? 'none' : 'auto' }}
+        >
+          <div
+            className="px-8 py-6 rounded-2xl flex flex-col items-center gap-4 min-w-[280px]"
+            style={{
+              background: 'rgba(19,19,19,0.85)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(86,67,52,0.2)',
+            }}
+          >
+            <div className="w-full h-1.5 bg-[#353534] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#FF8C00] rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${loadProgress}%` }}
+              />
+            </div>
+            <p
+              className="text-[#e5e2e1] opacity-50 text-[12px] tracking-wide"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              {loadStage}
+            </p>
+          </div>
+        </div>
+      )}
       {callouts.length > 0 && cameraState && rendererDomState && (
         <CalloutOverlay
           callouts={callouts}

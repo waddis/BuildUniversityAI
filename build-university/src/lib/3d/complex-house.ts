@@ -83,7 +83,18 @@ function procTex(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => 
   draw(c.getContext('2d')!)
   const t = new THREE.CanvasTexture(c)
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry)
+  t.colorSpace = THREE.SRGBColorSpace   // canvas albedo is sRGB — without this it renders washed-out
+  t.anisotropy = 8                       // crisp at grazing angles (roof/siding seen on an angle)
   return t
+}
+
+// A linear-data clone of an albedo texture, reused as a bumpMap for surface relief.
+function bumpClone(src: THREE.CanvasTexture, rx: number, ry: number): THREE.CanvasTexture {
+  const b = src.clone()
+  b.repeat.set(rx, ry)
+  b.colorSpace = THREE.NoColorSpace
+  b.needsUpdate = true
+  return b
 }
 
 // ── Realistic Materials with Procedural Textures ──
@@ -231,37 +242,55 @@ let _underlayTex: THREE.CanvasTexture | null = null
 function sidingMat(rx = 4, ry = 2): THREE.MeshStandardMaterial {
   if (!_sidingTex) _sidingTex = makeSidingTex()
   const t = _sidingTex.clone(); t.repeat.set(rx, ry); t.needsUpdate = true
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.75 })
+  return new THREE.MeshStandardMaterial({
+    map: t, bumpMap: bumpClone(_sidingTex, rx, ry), bumpScale: 1.2,
+    roughness: 0.82, metalness: 0, envMapIntensity: 0.35,
+  })
 }
 
 function stoneMat(): THREE.MeshStandardMaterial {
   if (!_stoneTex) _stoneTex = makeStoneTex()
   const t = _stoneTex.clone(); t.needsUpdate = true
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.88 })
+  return new THREE.MeshStandardMaterial({
+    map: t, bumpMap: bumpClone(_stoneTex, 1, 1), bumpScale: 2.0,
+    roughness: 0.92, metalness: 0, envMapIntensity: 0.45,
+  })
 }
 
 function roofMat(): THREE.MeshStandardMaterial {
   if (!_roofTex) _roofTex = makeRoofTex()
   const t = _roofTex.clone(); t.needsUpdate = true
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 })
+  return new THREE.MeshStandardMaterial({
+    map: t, bumpMap: bumpClone(_roofTex, 1, 1), bumpScale: 1.1,
+    roughness: 0.96, metalness: 0, envMapIntensity: 0.22,
+  })
 }
 
 function foundMat(): THREE.MeshStandardMaterial {
   if (!_foundTex) _foundTex = makeFoundTex()
   const t = _foundTex.clone(); t.needsUpdate = true
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.92 })
+  return new THREE.MeshStandardMaterial({
+    map: t, bumpMap: bumpClone(_foundTex, 1, 1), bumpScale: 0.7,
+    roughness: 0.95, metalness: 0, envMapIntensity: 0.25,
+  })
 }
 
 function lumberMat(): THREE.MeshStandardMaterial {
   if (!_lumberTex) _lumberTex = makeLumberTex()
   const t = _lumberTex.clone(); t.needsUpdate = true
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.82 })
+  return new THREE.MeshStandardMaterial({
+    map: t, bumpMap: bumpClone(_lumberTex, 1, 1), bumpScale: 0.5,
+    roughness: 0.85, metalness: 0, envMapIntensity: 0.3,
+  })
 }
 
 function underlayMat(): THREE.MeshStandardMaterial {
   if (!_underlayTex) _underlayTex = makeUnderlayTex()
   const t = _underlayTex.clone(); t.needsUpdate = true
-  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.92 })
+  return new THREE.MeshStandardMaterial({
+    map: t, bumpMap: bumpClone(_underlayTex, 1, 1), bumpScale: 0.5,
+    roughness: 0.95, metalness: 0, envMapIntensity: 0.18,
+  })
 }
 
 const roofColor = roofMat

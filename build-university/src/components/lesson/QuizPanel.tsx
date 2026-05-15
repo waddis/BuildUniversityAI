@@ -3,10 +3,16 @@
 import { useState, useEffect } from 'react'
 import type { QuizQuestion } from '@/types'
 
+export interface QuizAnswerResult {
+  question: QuizQuestion
+  userAnswer: string | number | undefined
+  isCorrect: boolean
+}
+
 interface QuizPanelProps {
   questions: QuizQuestion[]
   passingScore: number
-  onComplete: (score: number, passed: boolean) => void
+  onComplete: (score: number, passed: boolean, results: QuizAnswerResult[]) => void
 }
 
 export default function QuizPanel({ questions, passingScore, onComplete }: QuizPanelProps) {
@@ -36,6 +42,14 @@ export default function QuizPanel({ questions, passingScore, onComplete }: QuizP
     setShowExplanation(true)
   }
 
+  function buildResults(): QuizAnswerResult[] {
+    return questions.map(question => ({
+      question,
+      userAnswer: answers[question.id],
+      isCorrect: answers[question.id] === question.correct_answer,
+    }))
+  }
+
   function handleNext() {
     setShowExplanation(false)
     if (isLast) {
@@ -44,11 +58,9 @@ export default function QuizPanel({ questions, passingScore, onComplete }: QuizP
         const answer = answers[question.id]
         if (answer === question.correct_answer) correct++
       })
-      // Include current question
-      if (userAnswer === q.correct_answer) correct = Math.max(correct, correct) // already counted
       const score = Math.round((correct / questions.length) * 100)
       setSubmitted(true)
-      onComplete(score, score >= passingScore)
+      onComplete(score, score >= passingScore, buildResults())
     } else {
       setCurrentQ(prev => prev + 1)
     }

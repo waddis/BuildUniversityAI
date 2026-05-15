@@ -202,6 +202,39 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## Jurisdiction Service (LIVE)
 ZIP -> ASCE 7 wind speed -> DOE climate zones -> state code adoptions -> special jurisdictions (HVHZ, NYC, CA-WUI, TX-TDI, WI-UDC)
 
+## Damage Library — Independent Adjuster Training (`/damage`)
+JigSpace-style 3D damage scenarios. `DamageDetailViewer.tsx` is a phase machine:
+**walkthrough → find → scope → terms → complete**. Each phase is OPTIONAL per scenario —
+a scenario with only `stops`/`annotations` is a plain walkthrough (regression canaries:
+`roof-blistering`, `soft-metal-damage`).
+- Scenario data: `src/lib/content/damage-scenarios.ts` — `DamageScenario` carries
+  `findChallenge` (click targets), `scopeSheet` (graded estimate line items),
+  `glossary` (terminology drill).
+- Shared adjuster glossary: `src/lib/content/hail-glossary.ts` — `pickGlossary(ids)`.
+- 4 residential hail scenarios live: roof, windows & doors, siding & exterior, mechanicals & site.
+- **Visible damage marks:** `makeDamageMark()` builds procedural 3D marks (`hail-bruise`,
+  `dent`, `crack`, `crushed`, `spatter`, `puncture`, `ring`) from a `damageType` + `facing`
+  on each annotation/`FindTarget`. Marks render on the house AND are the find-phase click
+  target (raycast directly, no radius math). `facing` orients them flush — `roof-front`
+  uses the 8/12 pitch (`ROOF_SLOPE`). All mark fields are OPTIONAL (fallback = `ring`).
+- Scene is a daylight outdoor environment (sky-gradient dome, sun + sky hemisphere).
+- Find phase has hover cursor/glow + a Hint button; every phase opens with an intro card.
+- Mark positions must align to real `complex-house.ts` mesh coords (8/12 roof, +Z front).
+
+## Construction Walkthroughs (`/build`)
+`DamageDetailViewer.tsx` is a general cinematic engine — `/build` reuses it for
+"how it goes together" sequences. `CinematicStop.visibleGroups` (optional) overrides
+the scenario's visibility per stop, so the model reveals **layer-by-layer** as the
+camera flies. A per-stop `useEffect` owns walkthrough mesh visibility; damage scenarios
+omit `visibleGroups` and fall back to `scenario.visibleGroups` (no regression).
+- Content: `src/lib/content/build-sequences.ts` — `ROOF_CONSTRUCTION` (`getBuildSequence(id)`,
+  `ALL_BUILD_SEQUENCES`). Reuses the `DamageScenario` type; walkthrough-only (no find/scope/terms).
+- `ROOF_CONSTRUCTION` = 10 cumulative stops, framing → finished (gable structure → deck →
+  underlayment → ice barrier → drip edge → valley metal → step flashing → ridge cap →
+  fascia/gutters → finished). Roof weatherproofing layers are a peeled-back teaching diagram
+  in `complex-house.ts`, not physically nested — narration covers the true install order.
+- Routes: `src/app/build/page.tsx` (index) + `src/app/build/[id]/page.tsx` (viewer).
+
 ## Commands
 ```bash
 npm run dev      # Start dev server (port 3000)
@@ -255,5 +288,6 @@ npx tsc --noEmit # Type check
 - [ ] Wire Supabase auth to login page
 - [ ] Deploy to Vercel
 - [ ] Add commercial roofing training modules
-- [ ] Build damage assessment workflow
+- [x] Damage library — adjuster training (walkthrough/find/scope/terms phases, 4 residential hail scenarios)
+- [ ] Damage library — persist phase scores to `user_progress`; add commercial + wind/water scenarios
 - [ ] Content pipeline for lesson creation

@@ -49,17 +49,17 @@ export default function TopNav({ stepInfo }: { stepInfo?: { step: number; total:
             <span className="text-[12px] font-semibold text-[#FF8C00] font-label">{stepInfo.pct}%</span>
           </div>
         )}
-        <button className="px-4 py-1.5 text-[12px] font-label font-medium rounded-lg bg-[var(--surface-high)] text-[#e5e2e1]/50 hover:bg-[var(--surface-highest)] hover:text-[#e5e2e1]/80 transition-colors">
+        <button className="px-4 py-1.5 text-[12px] font-label font-medium rounded-lg bg-[var(--surface-high)] text-[#e5e2e1]/50 hover:bg-[var(--surface-highest)] hover:text-[#e5e2e1]/80 transition-colors" aria-label="Toggle wireframe view">
           Wireframe
         </button>
         <div className="flex items-center gap-1">
-          <button className="p-2 hover:bg-[var(--surface-high)] rounded-lg transition-all text-[#e5e2e1]/30 hover:text-[#e5e2e1]/60">
+          <button className="p-2 hover:bg-[var(--surface-high)] rounded-lg transition-all text-[#e5e2e1]/30 hover:text-[#e5e2e1]/60" aria-label="Toggle visibility">
             <Icon name="visibility" />
           </button>
-          <button className="p-2 hover:bg-[var(--surface-high)] rounded-lg transition-all text-[#e5e2e1]/30 hover:text-[#e5e2e1]/60">
+          <button className="p-2 hover:bg-[var(--surface-high)] rounded-lg transition-all text-[#e5e2e1]/30 hover:text-[#e5e2e1]/60" aria-label="Help">
             <Icon name="help_outline" />
           </button>
-          <button className="p-2 hover:bg-[var(--surface-high)] rounded-lg transition-all text-[#e5e2e1]/30 hover:text-[#e5e2e1]/60">
+          <button className="p-2 hover:bg-[var(--surface-high)] rounded-lg transition-all text-[#e5e2e1]/30 hover:text-[#e5e2e1]/60" aria-label="Account">
             <Icon name="account_circle" />
           </button>
         </div>
