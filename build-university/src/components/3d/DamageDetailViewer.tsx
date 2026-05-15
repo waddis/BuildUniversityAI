@@ -15,6 +15,7 @@ import * as THREE from 'three'
 /** Visual style of a rendered damage mark. */
 export type DamageMarkType =
   | 'hail-bruise' | 'dent' | 'crack' | 'crushed' | 'spatter' | 'puncture' | 'ring'
+  | 'blister' | 'alligator'
 
 /** Which way the damaged surface faces, so the mark lies flush against it. */
 export type SurfaceFacing = 'up' | 'out' | 'roof-front' | 'roof-back' | [number, number, number]
@@ -298,6 +299,63 @@ function damageTexture(type: DamageMarkType, hex: number): THREE.CanvasTexture {
       x.lineTo(cx + Math.cos(a) * (28 + Math.random() * 10), cy + Math.sin(a) * (28 + Math.random() * 10))
       x.stroke()
     }
+  } else if (type === 'blister') {
+    // Raised dome with INTACT granules — the visual opposite of a hail bruise.
+    // Bright-side / shadow-side lighting sells the bump; the granule speckle is
+    // the same color as the surrounding roof (no fracture, no darkening).
+    const g = x.createRadialGradient(cx - 10, cy - 10, 2, cx, cy, 50)
+    g.addColorStop(0, 'rgba(255,238,210,0.55)')
+    g.addColorStop(0.35, 'rgba(220,200,170,0.18)')
+    g.addColorStop(0.62, 'rgba(20,16,12,0.18)')
+    g.addColorStop(0.85, 'rgba(20,16,12,0.42)')
+    g.addColorStop(1, 'rgba(0,0,0,0)')
+    x.fillStyle = g
+    x.beginPath(); x.arc(cx, cy, 50, 0, Math.PI * 2); x.fill()
+    // Intact granules — same speckle as the field, no fractured spots
+    for (let i = 0; i < 90; i++) {
+      const a = Math.random() * Math.PI * 2, rr = Math.random() * 42
+      const v = 60 + Math.random() * 50 | 0
+      x.fillStyle = `rgba(${v},${v-8},${v-18},${0.35 + Math.random() * 0.3})`
+      x.beginPath(); x.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 0.8 + Math.random() * 1.6, 0, Math.PI * 2); x.fill()
+    }
+    // Soft amber rim — the way a low sun reads a blister edge in a photo
+    x.strokeStyle = css; x.lineWidth = 1.5; x.globalAlpha = 0.5
+    x.beginPath(); x.arc(cx, cy, 44, 0, Math.PI * 2); x.stroke()
+    x.globalAlpha = 1
+  } else if (type === 'alligator') {
+    // Polygonal crack network — UV-aged membrane / mat exposure pattern.
+    // Built as a Voronoi-ish web: scatter seeds, draw boundaries between cells.
+    const seeds: [number, number][] = []
+    for (let i = 0; i < 22; i++) {
+      seeds.push([cx + (Math.random() - 0.5) * 100, cy + (Math.random() - 0.5) * 100])
+    }
+    x.fillStyle = 'rgba(28,22,18,0.32)'
+    x.beginPath(); x.arc(cx, cy, 52, 0, Math.PI * 2); x.fill()
+    x.strokeStyle = 'rgba(15,12,10,0.85)'; x.lineWidth = 1.4
+    x.shadowColor = 'rgba(255,235,200,0.18)'; x.shadowBlur = 1
+    // Draw a short segment from each seed toward each near neighbor — fakes cell edges.
+    for (let i = 0; i < seeds.length; i++) {
+      for (let j = i + 1; j < seeds.length; j++) {
+        const dx = seeds[j][0] - seeds[i][0], dy = seeds[j][1] - seeds[i][1]
+        const d2 = dx * dx + dy * dy
+        if (d2 > 900) continue // only short connections
+        const mx = (seeds[i][0] + seeds[j][0]) / 2, my = (seeds[i][1] + seeds[j][1]) / 2
+        // Perpendicular short slash at midpoint, jittered
+        const len = 4 + Math.random() * 5
+        const pa = Math.atan2(dy, dx) + Math.PI / 2
+        x.beginPath()
+        x.moveTo(mx - Math.cos(pa) * len + (Math.random() - 0.5) * 2, my - Math.sin(pa) * len + (Math.random() - 0.5) * 2)
+        x.lineTo(mx + Math.cos(pa) * len + (Math.random() - 0.5) * 2, my + Math.sin(pa) * len + (Math.random() - 0.5) * 2)
+        x.stroke()
+      }
+    }
+    x.shadowBlur = 0
+    // Soft outer fade
+    const fade = x.createRadialGradient(cx, cy, 36, cx, cy, 60)
+    fade.addColorStop(0, 'rgba(0,0,0,0)')
+    fade.addColorStop(1, 'rgba(20,16,12,0)')
+    x.fillStyle = fade
+    x.beginPath(); x.arc(cx, cy, 60, 0, Math.PI * 2); x.fill()
   } else {
     // 'crushed' backing streak, and 'ring' fallback
     x.strokeStyle = css; x.lineWidth = 5
@@ -366,6 +424,31 @@ function makeDamageMark(type: DamageMarkType, hex: number, facing: SurfaceFacing
       )
       ring.position.z = 0.018
       group.add(ring)
+    } else if (type === 'blister') {
+      // The whole point of a blister: it's RAISED. A flattened hemisphere
+      // sits proud of the surface and reads in 3D from any close angle.
+      const dome = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshStandardMaterial({
+          // Same dark roof tone as the asphalt field — no granule fracture,
+          // just an intact bubble in the mat.
+          color: 0x33302c, roughness: 0.78, metalness: 0,
+        })
+      )
+      // Squash the dome — real shingle blisters are wide and shallow, not round.
+      dome.scale.set(1, 1, 0.45)
+      dome.position.z = 0.018
+      dome.castShadow = true
+      group.add(dome)
+    } else if (type === 'alligator') {
+      // Light raised relief along the cracked perimeter — the surface curls at
+      // the edges of each cell as the mat dries out. A thin torus reads it.
+      const rim = new THREE.Mesh(
+        new THREE.TorusGeometry(0.24, 0.012, 8, 32),
+        new THREE.MeshStandardMaterial({ color: 0x2a241e, roughness: 0.92, metalness: 0 })
+      )
+      rim.position.z = 0.019
+      group.add(rim)
     }
   }
 

@@ -145,28 +145,63 @@ function makeStoneTex(): THREE.CanvasTexture {
   }, 2, 1)
 }
 
-// Asphalt shingle — dark granular texture with tab lines
+// Asphalt shingle — architectural laminate. Real shingles read as a mosaic of
+// mineral granules in three tones (charcoal, sand, slate-blue undertone) over a
+// dimensional tab pattern. Weathering bands fade vertically along each course.
 function makeRoofTex(): THREE.CanvasTexture {
   return procTex(512, 256, ctx => {
-    ctx.fillStyle = '#3A3632'; ctx.fillRect(0, 0, 512, 256)
-    // Granular noise
-    for (let i = 0; i < 20000; i++) {
-      const v = 30 + Math.random() * 40 | 0
-      ctx.fillStyle = `rgba(${v},${v-5},${v-10},${0.3 + Math.random()*0.4})`
-      ctx.fillRect(Math.random() * 512, Math.random() * 256, 1 + Math.random(), 1 + Math.random())
+    // Asphalt mat base
+    ctx.fillStyle = '#2E2A26'; ctx.fillRect(0, 0, 512, 256)
+    // Granule layer — three mineral tones woven together, NOT a uniform speckle
+    const tones: Array<[number, number, number]> = [
+      [42, 38, 32],   // charcoal granule
+      [56, 50, 44],   // mid-grey granule
+      [78, 70, 60],   // sand granule
+      [34, 36, 42],   // slate-blue undertone (catches reflected sky)
+      [92, 84, 70],   // warm highlight granule
+    ]
+    for (let i = 0; i < 32000; i++) {
+      const [r, g, b] = tones[(Math.random() * tones.length) | 0]
+      const j = (Math.random() - 0.5) * 12
+      ctx.fillStyle = `rgba(${r + j | 0},${g + j | 0},${b + j | 0},${0.35 + Math.random() * 0.45})`
+      const s = 0.8 + Math.random() * 1.4
+      ctx.fillRect(Math.random() * 512, Math.random() * 256, s, s)
     }
-    // Shingle tab lines (horizontal shadows)
+    // Soft vertical weathering bands — sun-fade across the course
+    for (let bx = 0; bx < 512; bx += 64 + (Math.random() * 24 | 0)) {
+      const bw = 24 + Math.random() * 28
+      const op = 0.04 + Math.random() * 0.06
+      const lg = ctx.createLinearGradient(bx, 0, bx + bw, 0)
+      lg.addColorStop(0, 'rgba(0,0,0,0)')
+      lg.addColorStop(0.5, `rgba(180,170,150,${op})`)
+      lg.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = lg
+      ctx.fillRect(bx, 0, bw, 256)
+    }
+    // Shingle course shadow + highlight — top edge dark, kicker just below catches light
     for (let y = 0; y < 256; y += 42) {
-      ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 2
+      ctx.strokeStyle = 'rgba(0,0,0,0.32)'; ctx.lineWidth = 2.5
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke()
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1
-      ctx.beginPath(); ctx.moveTo(0, y + 2); ctx.lineTo(512, y + 2); ctx.stroke()
+      ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(0, y + 1); ctx.lineTo(512, y + 1); ctx.stroke()
+      ctx.strokeStyle = 'rgba(255,242,220,0.07)'; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(0, y + 3); ctx.lineTo(512, y + 3); ctx.stroke()
     }
-    // Vertical tab cuts
+    // Tab cuts — staggered, with a faint shadow on the leading edge for depth
     for (let y = 0; y < 256; y += 42) {
       for (let x = (y % 84 < 42 ? 0 : 85); x < 512; x += 170) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1
+        ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = 1.2
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 42); ctx.stroke()
+        ctx.strokeStyle = 'rgba(255,242,220,0.05)'; ctx.lineWidth = 1
+        ctx.beginPath(); ctx.moveTo(x + 1, y); ctx.lineTo(x + 1, y + 42); ctx.stroke()
+      }
+    }
+    // Occasional darker "shadow tab" — laminate dimensional shingle look
+    for (let y = 12; y < 256; y += 42) {
+      for (let x = 0; x < 512; x += 170) {
+        const tw = 30 + Math.random() * 60
+        ctx.fillStyle = `rgba(0,0,0,${0.06 + Math.random() * 0.06})`
+        ctx.fillRect(x + Math.random() * 80, y, tw, 14)
       }
     }
   }, 6, 4)
