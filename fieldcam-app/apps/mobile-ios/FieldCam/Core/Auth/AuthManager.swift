@@ -28,6 +28,7 @@ final class AuthManager: ObservableObject {
             body: LoginBody(email: email, password: password)
         )
         APIClient.shared.token = response.access_token
+        APIClient.shared.refreshToken = response.refresh_token
         currentUser = response.user
         isAuthenticated = true
     }
@@ -45,12 +46,14 @@ final class AuthManager: ObservableObject {
             body: RegisterBody(email: email, password: password, full_name: fullName, company_name: companyName)
         )
         APIClient.shared.token = response.access_token
+        APIClient.shared.refreshToken = response.refresh_token
         currentUser = response.user
         isAuthenticated = true
     }
 
     func logout() {
         APIClient.shared.token = nil
+        APIClient.shared.refreshToken = nil
         currentUser = nil
         isAuthenticated = false
     }
@@ -65,8 +68,12 @@ final class AuthManager: ObservableObject {
         guard APIClient.shared.token != nil else { return }
         do {
             try await fetchCurrentUser()
-        } catch {
+        } catch APIError.serverError(401, _) {
+            // Token rejected (and refresh failed) — the session is truly dead.
             logout()
+        } catch {
+            // Transient failure (offline, server down) — keep the session.
+            isAuthenticated = true
         }
     }
 }

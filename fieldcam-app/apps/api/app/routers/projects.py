@@ -69,7 +69,12 @@ async def list_projects(
     if status_filter:
         query = query.where(Project.status == status_filter)
     if q:
-        query = query.where(Project.name.ilike(f"%{q}%"))
+        query = query.where(
+            Project.name.ilike(f"%{q}%")
+            | Project.customer_name.ilike(f"%{q}%")
+            | Project.address_line_1.ilike(f"%{q}%")
+            | Project.claim_number.ilike(f"%{q}%")
+        )
 
     # Count
     count_query = select(func.count()).select_from(query.subquery())

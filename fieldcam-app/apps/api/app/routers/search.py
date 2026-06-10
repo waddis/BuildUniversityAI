@@ -84,13 +84,15 @@ async def get_activity(
     result = await db.execute(query)
     events = result.scalars().all()
 
+    actor_ids = {e.actor_user_id for e in events if e.actor_user_id}
+    names_by_id = {}
+    if actor_ids:
+        users_result = await db.execute(select(User).where(User.id.in_(actor_ids)))
+        names_by_id = {u.id: u.full_name for u in users_result.scalars().all()}
+
     response = []
     for e in events:
-        actor_name = None
-        if e.actor_user_id:
-            user_result = await db.execute(select(User).where(User.id == e.actor_user_id))
-            user = user_result.scalar_one_or_none()
-            actor_name = user.full_name if user else None
+        actor_name = names_by_id.get(e.actor_user_id) if e.actor_user_id else None
 
         response.append({
             "id": str(e.id),

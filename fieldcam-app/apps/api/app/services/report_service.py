@@ -123,17 +123,22 @@ async def generate_report_pdf(db: AsyncSession, report_id: str) -> str:
         generated_date=datetime.utcnow().strftime("%B %d, %Y at %H:%M UTC"),
     )
 
-    # Generate PDF
-    pdf_bytes = HTML(string=html_content).write_pdf()
+    # Generate PDF off the event loop — WeasyPrint is CPU-bound and would
+    # otherwise freeze every other request for the duration of the render.
+    import asyncio
 
-    # Upload to storage
+    pdf_bytes = await asyncio.to_thread(lambda: HTML(string=html_content).write_pdf())
+
+    # Upload to storage (boto3 is blocking — keep it off the loop too)
     storage_key = f"{report.company_id}/reports/{report.id}.pdf"
     client = get_s3_client()
-    client.put_object(
-        Bucket=settings.storage_bucket,
-        Key=storage_key,
-        Body=pdf_bytes,
-        ContentType="application/pdf",
+    await asyncio.to_thread(
+        lambda: client.put_object(
+            Bucket=settings.storage_bucket,
+            Key=storage_key,
+            Body=pdf_bytes,
+            ContentType="application/pdf",
+        )
     )
 
     # Update report

@@ -8,11 +8,26 @@ final class APIClient {
     private let decoder: JSONDecoder
 
     private init() {
-        self.baseURL = URL(string: "http://localhost:8000/api/v1")!
+        self.baseURL = APIClient.resolveBaseURL()
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         self.session = URLSession(configuration: config)
         self.decoder = JSONDecoder()
+    }
+
+    /// Info.plist "APIBaseURL" overrides per build config; otherwise localhost
+    /// in Debug and the production host in Release.
+    private static func resolveBaseURL() -> URL {
+        if let configured = Bundle.main.object(forInfoDictionaryKey: "APIBaseURL") as? String,
+           !configured.isEmpty,
+           let url = URL(string: configured) {
+            return url
+        }
+        #if DEBUG
+        return URL(string: "http://localhost:8000/api/v1")!
+        #else
+        return URL(string: "https://api.fieldcam.app/api/v1")!
+        #endif
     }
 
     var token: String? {
@@ -22,6 +37,17 @@ final class APIClient {
                 UserDefaults.standard.set(newValue, forKey: "fieldcam_token")
             } else {
                 UserDefaults.standard.removeObject(forKey: "fieldcam_token")
+            }
+        }
+    }
+
+    var refreshToken: String? {
+        get { UserDefaults.standard.string(forKey: "fieldcam_refresh_token") }
+        set {
+            if let newValue {
+                UserDefaults.standard.set(newValue, forKey: "fieldcam_refresh_token")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "fieldcam_refresh_token")
             }
         }
     }
@@ -57,11 +83,66 @@ final class APIClient {
         }
     }
 
+    private struct RefreshResponse: Decodable {
+        let access_token: String
+        let refresh_token: String
+    }
+
+    /// Serializes refresh attempts: concurrent 401s (e.g. HomeView's parallel
+    /// requests after token expiry) share one refresh call instead of racing.
+    private actor RefreshCoordinator {
+        private var inFlight: Task<Bool, Never>?
+
+        func run(_ operation: @escaping () async -> Bool) async -> Bool {
+            if let inFlight { return await inFlight.value }
+            let task = Task { await operation() }
+            inFlight = task
+            let result = await task.value
+            inFlight = nil
+            return result
+        }
+    }
+
+    private let refreshCoordinator = RefreshCoordinator()
+
+    /// Exchange the stored refresh token for new tokens. Returns false if
+    /// there is no refresh token or the server rejects it. A definitive
+    /// rejection (401) is distinguished from transient failures by
+    /// performRefresh clearing the refresh token only on rejection.
+    private func refreshSession() async -> Bool {
+        await refreshCoordinator.run { [weak self] in
+            await self?.performRefresh() ?? false
+        }
+    }
+
+    private func performRefresh() async -> Bool {
+        guard let refreshToken else { return false }
+        struct Body: Encodable { let refresh_token: String }
+        do {
+            let response: RefreshResponse = try await request(
+                "auth/refresh", method: "POST",
+                body: Body(refresh_token: refreshToken),
+                allowRefresh: false
+            )
+            self.token = response.access_token
+            self.refreshToken = response.refresh_token
+            return true
+        } catch APIError.serverError(401, _) {
+            // The server rejected the refresh token — it is permanently dead.
+            self.refreshToken = nil
+            return false
+        } catch {
+            // Transient failure (offline, timeout) — keep the token for retry.
+            return false
+        }
+    }
+
     private func request<T: Decodable>(
         _ path: String,
         method: String,
         body: (any Encodable)? = nil,
-        query: [URLQueryItem]? = nil
+        query: [URLQueryItem]? = nil,
+        allowRefresh: Bool = true
     ) async throws -> T {
         var url = baseURL.appendingPathComponent(path)
         if let query, !query.isEmpty,
@@ -88,6 +169,11 @@ final class APIClient {
         }
 
         guard (200...299).contains(http.statusCode) else {
+            if http.statusCode == 401, allowRefresh,
+               path != Endpoints.login, path != Endpoints.register,
+               await refreshSession() {
+                return try await request(path, method: method, body: body, query: query, allowRefresh: false)
+            }
             let detail = try? decoder.decode(ErrorDetail.self, from: data)
             throw APIError.serverError(http.statusCode, detail?.detail ?? "Error \(http.statusCode)")
         }

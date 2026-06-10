@@ -22,6 +22,7 @@ export default function ReportBuilder({ projectId }: { projectId: string }) {
   const [title, setTitle] = useState("");
   const [selectedMedia, setSelectedMedia] = useState<Set<string>>(new Set());
   const [creating, setCreating] = useState(false);
+  const [generateError, setGenerateError] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -62,9 +63,15 @@ export default function ReportBuilder({ projectId }: { projectId: string }) {
   };
 
   const handleGenerate = async (reportId: string) => {
+    setGenerateError("");
     try {
       await api.post(`/reports/${reportId}/generate`);
-      // Refresh
+    } catch (err) {
+      setGenerateError(err instanceof Error ? err.message : "Could not start generation");
+    }
+    // Refresh even on error — a 409 means the report is already generating,
+    // so the row should flip to its real state.
+    try {
       const updated = await api.get<Report[]>(`/reports/projects/${projectId}`);
       setReports(updated);
     } catch {}
@@ -127,6 +134,10 @@ export default function ReportBuilder({ projectId }: { projectId: string }) {
         </div>
       )}
 
+      {generateError && (
+        <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg mb-3">{generateError}</p>
+      )}
+
       {/* Report list */}
       {reports.length === 0 && !showCreate ? (
         <p className="text-sm text-slate-400 text-center py-8">No reports yet. Create one to get started.</p>
@@ -141,10 +152,14 @@ export default function ReportBuilder({ projectId }: { projectId: string }) {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {report.status === "draft" && (
+                {(report.status === "draft" || report.status === "failed") && (
                   <button onClick={() => handleGenerate(report.id)}
-                    className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100">
-                    Generate PDF
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
+                      report.status === "failed"
+                        ? "text-red-600 bg-red-50 hover:bg-red-100"
+                        : "text-blue-600 bg-blue-50 hover:bg-blue-100"
+                    }`}>
+                    {report.status === "failed" ? "Failed — Retry" : "Generate PDF"}
                   </button>
                 )}
                 {report.status === "generating" && (

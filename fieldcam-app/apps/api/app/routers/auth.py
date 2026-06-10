@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel
 
 from app.deps import DB, CurrentUser
 from app.schemas.auth import (
@@ -14,6 +15,8 @@ from app.services.auth_service import (
     authenticate_user,
     create_access_token,
     create_refresh_token,
+    decode_token,
+    get_user_by_id,
     get_user_primary_membership,
 )
 
@@ -86,6 +89,29 @@ async def login(body: LoginRequest, db: DB):
             is_active=user.is_active,
             created_at=user.created_at.isoformat(),
         ),
+    )
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh(body: RefreshRequest, db: DB):
+    payload = decode_token(body.refresh_token)
+    if not payload or payload.get("type") != "refresh":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+    user = await get_user_by_id(db, payload["sub"])
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+    membership = await get_user_primary_membership(db, user.id)
+    company_id = str(membership.company_id) if membership else None
+
+    return TokenResponse(
+        access_token=create_access_token(str(user.id), company_id),
+        refresh_token=create_refresh_token(str(user.id)),
     )
 
 

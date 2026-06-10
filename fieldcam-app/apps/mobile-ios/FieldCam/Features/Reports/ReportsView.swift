@@ -224,10 +224,13 @@ struct ReportsView: View {
     private func generate(_ report: Report) async {
         do {
             try await ReportService.generate(reportId: report.id)
-            reports = (try? await ReportService.fetchForProject(id: projectId)) ?? reports
+            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+        // Refetch even on error — a 409 means the report is already
+        // generating, so the row should flip to the spinner state.
+        reports = (try? await ReportService.fetchForProject(id: projectId)) ?? reports
     }
 }
 
@@ -248,7 +251,7 @@ private struct ReportRow: View {
             }
             Spacer()
 
-            if report.status == "draft" {
+            if report.status == "draft" || report.status == "failed" {
                 Button {
                     isGenerating = true
                     Task {
@@ -256,12 +259,12 @@ private struct ReportRow: View {
                         isGenerating = false
                     }
                 } label: {
-                    Text("Generate PDF")
+                    Text(report.status == "failed" ? "Failed — Retry" : "Generate PDF")
                         .font(.system(size: 11, weight: .medium))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.brandPrimary.opacity(0.08))
-                        .foregroundStyle(Color.brandPrimary)
+                        .background((report.status == "failed" ? Color.brandDanger : Color.brandPrimary).opacity(0.08))
+                        .foregroundStyle(report.status == "failed" ? Color.brandDanger : Color.brandPrimary)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .disabled(isGenerating)

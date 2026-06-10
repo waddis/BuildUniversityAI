@@ -45,4 +45,5 @@ enum Endpoints {
 
     // Notifications
     static let notifications = "notifications"
+    static func notificationRead(_ id: String) -> String { "notifications/\(id)/read" }
 }

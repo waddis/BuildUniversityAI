@@ -1,6 +1,7 @@
 import uuid as uuid_mod
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from sqlalchemy import select
 
 from app.deps import DB, CurrentUser, CurrentMembership
@@ -150,21 +151,51 @@ async def update_report(report_id: str, body: UpdateReportRequest, membership: C
 
 
 @router.post("/{report_id}/generate")
-async def generate_report(report_id: str, user: CurrentUser, membership: CurrentMembership, db: DB):
+async def generate_report(
+    report_id: str,
+    background_tasks: BackgroundTasks,
+    user: CurrentUser,
+    membership: CurrentMembership,
+    db: DB,
+):
     result = await db.execute(
         select(Report).where(Report.id == uuid_mod.UUID(report_id), Report.company_id == membership.company_id)
     )
     report = result.scalar_one_or_none()
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+    if report.status == "generating":
+        # A 'generating' status older than 10 minutes means the rendering
+        # process died (crash/redeploy) before transitioning the report —
+        # let the user regenerate rather than locking the report forever.
+        age = datetime.now(timezone.utc) - report.updated_at
+        if age < timedelta(minutes=10):
+            raise HTTPException(status_code=409, detail="Report is already generating")
 
     report.status = "generating"
     await db.flush()
 
-    # TODO: Enqueue background job
-    # await arq_pool.enqueue_job("generate_report", str(report.id))
+    background_tasks.add_task(_generate_in_background, str(report.id))
 
     return {"message": "Report generation started", "report_id": str(report.id)}
+
+
+async def _generate_in_background(report_id: str):
+    """Render the PDF in its own session after the response is sent."""
+    from app.database import async_session
+    from app.services.report_service import generate_report_pdf
+
+    async with async_session() as session:
+        try:
+            await generate_report_pdf(session, report_id)
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            result = await session.execute(select(Report).where(Report.id == uuid_mod.UUID(report_id)))
+            report = result.scalar_one_or_none()
+            if report:
+                report.status = "failed"
+                await session.commit()
 
 
 @router.get("/{report_id}/download")

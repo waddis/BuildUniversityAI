@@ -60,10 +60,16 @@ async def list_members(membership: CurrentMembership, db: DB):
         .order_by(Membership.created_at)
     )
     members = result.scalars().all()
+
+    user_ids = {m.user_id for m in members}
+    users_by_id = {}
+    if user_ids:
+        users_result = await db.execute(select(User).where(User.id.in_(user_ids)))
+        users_by_id = {u.id: u for u in users_result.scalars().all()}
+
     response = []
     for m in members:
-        user_result = await db.execute(select(User).where(User.id == m.user_id))
-        user = user_result.scalar_one_or_none()
+        user = users_by_id.get(m.user_id)
         user_resp = None
         if user:
             user_resp = UserResponse(

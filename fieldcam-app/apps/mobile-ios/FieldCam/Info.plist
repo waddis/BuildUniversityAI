@@ -20,6 +20,8 @@
 	<string>1.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>APIBaseURL</key>
+	<string></string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>
@@ -45,6 +47,8 @@
 	<string>fieldcam needs microphone access to record video with audio.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>fieldcam needs photo library access to import existing photos.</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

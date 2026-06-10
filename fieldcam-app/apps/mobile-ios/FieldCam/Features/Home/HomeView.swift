@@ -7,6 +7,8 @@ struct HomeView: View {
     @State private var openTaskCount = 0
     @State private var teamCount = 0
     @State private var isLoading = true
+    @State private var errorMessage: String?
+    @State private var unreadCount = 0
     @State private var showNotifications = false
     @State private var showCreate = false
 
@@ -38,6 +40,22 @@ struct HomeView: View {
                                     .padding(.vertical, 32)
                                 Spacer()
                             }
+                        } else if let errorMessage {
+                            VStack(spacing: 12) {
+                                Image(systemName: "wifi.exclamationmark")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(.secondary)
+                                Text(errorMessage)
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                                Button("Retry") { Task { await load() } }
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 24)
+                            .background(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
                         } else if recentProjects.isEmpty {
                             VStack(spacing: 12) {
                                 Text("No projects yet.")
@@ -88,10 +106,22 @@ struct HomeView: View {
                         showNotifications = true
                     } label: {
                         Image(systemName: "bell")
+                            .overlay(alignment: .topTrailing) {
+                                if unreadCount > 0 {
+                                    Text("\(min(unreadCount, 99))")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 4)
+                                        .padding(.vertical, 1)
+                                        .background(Color.brandDanger)
+                                        .clipShape(Capsule())
+                                        .offset(x: 8, y: -6)
+                                }
+                            }
                     }
                 }
             }
-            .sheet(isPresented: $showNotifications) {
+            .sheet(isPresented: $showNotifications, onDismiss: { Task { await load() } }) {
                 NotificationsView()
             }
             .sheet(isPresented: $showCreate) {
@@ -152,14 +182,24 @@ struct HomeView: View {
                 query: [URLQueryItem(name: "page_size", value: "5")]
             )
             async let membersTask: [Membership] = APIClient.shared.get(Endpoints.members)
+            async let notificationsTask: [NotificationItem] = APIClient.shared.get(
+                Endpoints.notifications,
+                query: [URLQueryItem(name: "unread_only", value: "true")]
+            )
 
             let response = try await projectsTask
             recentProjects = response.items
             projectCount = response.total
             mediaCount = response.items.reduce(0) { $0 + ($1.media_count ?? 0) }
             teamCount = ((try? await membersTask) ?? []).count
+            unreadCount = ((try? await notificationsTask) ?? []).filter { !$0.isRead }.count
+            errorMessage = nil
         } catch {
-            // API unreachable; keep last known values
+            // Keep any previously loaded values; surface the failure instead
+            // of rendering a misleading "No projects yet" empty state.
+            if recentProjects.isEmpty {
+                errorMessage = error.localizedDescription
+            }
         }
         isLoading = false
     }

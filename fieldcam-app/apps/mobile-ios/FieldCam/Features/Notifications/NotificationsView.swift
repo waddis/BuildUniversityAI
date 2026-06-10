@@ -5,13 +5,14 @@ struct NotificationItem: Decodable, Identifiable {
     let type: String
     let title: String
     let body: String?
-    let read_at: String?
+    var read_at: String?
     let created_at: String
 
     var isRead: Bool { read_at != nil }
 }
 
 struct NotificationsView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var notifications: [NotificationItem] = []
     @State private var isLoading = true
 
@@ -53,7 +54,15 @@ struct NotificationsView: View {
                 }
             }
             .navigationTitle("Notifications")
-            .task { await fetchNotifications() }
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .task {
+                await fetchNotifications()
+                markAllRead()
+            }
             .refreshable { await fetchNotifications() }
         }
     }
@@ -65,5 +74,26 @@ struct NotificationsView: View {
             // Network errors are expected when offline — show empty state gracefully
         }
         isLoading = false
+    }
+
+    /// Marks everything read locally for instant UI, then PATCHes the server
+    /// in an unstructured Task so dismissing the sheet can't cancel it mid-loop.
+    private func markAllRead() {
+        let unreadIds = notifications.filter { !$0.isRead }.map(\.id)
+        guard !unreadIds.isEmpty else { return }
+
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        notifications = notifications.map { notif in
+            var updated = notif
+            if updated.read_at == nil { updated.read_at = stamp }
+            return updated
+        }
+
+        Task {
+            struct MarkReadResponse: Decodable { let status: String }
+            for id in unreadIds {
+                let _: MarkReadResponse? = try? await APIClient.shared.patch(Endpoints.notificationRead(id))
+            }
+        }
     }
 }

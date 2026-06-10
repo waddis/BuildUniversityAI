@@ -1,5 +1,6 @@
 import SwiftUI
 
+// AuthView: dark-themed by design; app-wide UIUserInterfaceStyle is Light.
 struct AuthView: View {
     enum Mode { case login, register }
 
