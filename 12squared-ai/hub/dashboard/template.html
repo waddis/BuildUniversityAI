@@ -218,7 +218,24 @@
   .comp-bar.fill-suite { background: linear-gradient(90deg,#5a8bff,#7fa8ff); }
   .comp-bar-val { font-size: 12px; text-align: right; opacity: .85; }
   .comp-hero-foot { margin-top: 10px; }
-  @media (max-width: 640px) { .comp-hero-grid { grid-template-columns: 1fr; } .comp-hero-vs { display: none; } }
+  /* what-they-have calculator */
+  .comp-calc-head { margin-bottom: 10px; }
+  .comp-calc-head h3 { margin: 0 0 2px; }
+  .comp-muted { opacity: .55; }
+  .calc-table { width: 100%; border-collapse: collapse; margin: 4px 0 16px; }
+  .calc-table th { text-align: left; padding: 6px 10px; font-size: 11px; opacity: .55; text-transform: uppercase; letter-spacing: .05em; }
+  .calc-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 13px; }
+  .calc-cat td { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; opacity: .5; padding-top: 13px; border-bottom: none; }
+  .calc-own { background: rgba(80,140,255,.06); }
+  .calc-dim { opacity: .42; }
+  .calc-chk { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+  .calc-chk input { accent-color: #6f97ff; }
+  .calc-cost { font-variant-numeric: tabular-nums; }
+  .calc-table select { background: rgba(255,255,255,.06); color: inherit; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 7px; padding: 4px 8px; font-size: 12px; max-width: 240px; }
+  .totals2 { margin-top: 6px; }
+  @media (max-width: 640px) { .comp-hero-grid { grid-template-columns: 1fr; } .comp-hero-vs { display: none; }
+    .calc-table select { max-width: 150px; } }
   .comp-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; }
   .comp-table th, .comp-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; }
   .comp-own { background: rgba(80,140,255,.08); }
@@ -664,6 +681,8 @@ function renderAdmin() {
 
 /* ---- Competitor pricing -------------------------------------------------- */
 let _compDoc = null;
+let _compSel = {};        // vendorId -> { included, tierName } — the "what they have" basket
+let _compWired = false;   // delegated change-listener attached once
 const COMP_TODAY = new Date().toISOString().slice(0,10);
 const CATS = [['photo_docs','Photo Documentation'],['hail_data','Hail / Storm Data'],['code_reports','Code Reports']];
 
@@ -678,11 +697,41 @@ async function loadCompetitors() {
     return;
   }
   const slider = document.querySelector('#comp-users');
+  initCompSel(+slider.value);
   slider.oninput = () => {
     document.querySelector('#comp-users-val').textContent = slider.value;
     renderCompetitors(+slider.value);
   };
+  if (!_compWired) {
+    wrap.addEventListener('change', onCompSelChange);
+    _compWired = true;
+  }
   renderCompetitors(+slider.value);
+}
+
+// Seed the basket once: the cheapest competitor per category is "had" by
+// default (mirrors the auto stack); 12² products default to their entry tier.
+function initCompSel(n) {
+  if (Object.keys(_compSel).length) return;
+  const auto = Competitors.stackTotals(_compDoc, n);
+  const had = new Set(auto.stack.items.map(i => i.id));
+  for (const v of _compDoc.competitors) {
+    const c = Competitors.costAtUsers(v, n);
+    const fallback = (v.tiers.find(t => !t.quoteOnly) || v.tiers[0]).name;
+    _compSel[v.id] = { included: had.has(v.id), tierName: c.tierName || fallback };
+  }
+  for (const v of _compDoc.twelveSquared) {
+    const c = Competitors.costAtUsers(v, n);
+    _compSel[v.id] = { included: true, tierName: c.tierName || v.tiers[0].name };
+  }
+}
+
+function onCompSelChange(e) {
+  const inc = e.target.getAttribute('data-sel-inc');
+  const tier = e.target.getAttribute('data-sel-tier');
+  if (inc) { (_compSel[inc] = _compSel[inc] || {}).included = e.target.checked; }
+  if (tier) { (_compSel[tier] = _compSel[tier] || {}).tierName = e.target.value; }
+  if (inc || tier) renderCompetitors(+document.querySelector('#comp-users').value);
 }
 
 function compBadge(tier) {
@@ -708,7 +757,7 @@ function renderCompetitors(n) {
   document.querySelector('#comp-banner').innerHTML =
     `Oldest verified date: <strong>${esc(oldest)}</strong> · re-verify quote-only & archive sources in a browser before relying.`;
 
-  let html = renderTotals(n);
+  let html = renderCalculator(n);
   for (const [cat, label] of CATS) {
     const own = _compDoc.twelveSquared.filter(v => v.category === cat);
     const rivals = _compDoc.competitors.filter(v => v.category === cat);
@@ -781,42 +830,71 @@ function renderBattlecards(n) {
   return `<h3>Battlecards</h3><div class="comp-cards">${cards}</div>`;
 }
 
-function renderTotals(n) {
-  const t = Competitors.stackTotals(_compDoc, n);
-  const stack = t.stack.totalCents, suite = t.suite.totalCents;
-  const max = Math.max(stack, suite, 1);
-  const cheaper = t.savingsCents > 0;
-  const pill = i => `<span class="comp-pill">${esc(i.name)} ${Competitors.fmtMoney(i.monthlyCents)}</span>`;
-  const altNote = t.stack.alternatives.length
-    ? ` Cheapest option per category used; alternative: ${t.stack.alternatives.map(a => `${esc(a.name)} ${Competitors.fmtMoney(a.monthlyCents)}/mo`).join(', ')}.` : '';
-  const quoteNote = t.stack.quoteOnly.length
-    ? ` Quote-only (not summed): ${t.stack.quoteOnly.map(esc).join(', ')}.` : '';
+function renderCalculator(n) {
+  const b = Competitors.basketTotals(_compDoc, n, _compSel);
+  const max = Math.max(b.theirTotal, b.suiteTotal, 1);
+  const cheaper = b.savingsCents > 0;
+
+  const tierOpts = (v, selName) => v.tiers.map(t => {
+    const c = Competitors.costForTier(v, t, n);
+    const price = t.quoteOnly ? 'quote' : (c.monthlyCents !== null ? Competitors.fmtMoney(c.monthlyCents) + '/mo' : '—');
+    return `<option value="${esc(t.name)}" ${t.name === selName ? 'selected' : ''}>${esc(t.name)} · ${price}</option>`;
+  }).join('');
+  const costCell = c => c.monthlyCents !== null
+    ? `${Competitors.fmtMoney(c.monthlyCents)}/mo${c.warn ? ` <span class="badge badge-amber">${esc(c.warn)}</span>` : ''}`
+    : '<span class="comp-muted">Contact sales</span>';
+
+  let rows = '';
+  for (const [cat, label] of CATS) {
+    rows += `<tr class="calc-cat"><td colspan="4">${esc(label)}</td></tr>`;
+    for (const v of _compDoc.competitors.filter(x => x.category === cat)) {
+      const s = _compSel[v.id];
+      const c = Competitors.costForTier(v, v.tiers.find(t => t.name === s.tierName) || v.tiers[0], n);
+      rows += `<tr>
+        <td><label class="calc-chk"><input type="checkbox" data-sel-inc="${esc(v.id)}" ${s.included ? 'checked' : ''}> ${esc(v.name)}</label></td>
+        <td><select data-sel-tier="${esc(v.id)}">${tierOpts(v, s.tierName)}</select></td>
+        <td class="calc-cost">${costCell(c)}</td>
+        <td class="comp-muted">${esc(v.seatModel)}</td>
+      </tr>`;
+    }
+    for (const v of _compDoc.twelveSquared.filter(x => x.category === cat)) {
+      const s = _compSel[v.id];
+      const c = Competitors.costForTier(v, v.tiers.find(t => t.name === s.tierName) || v.tiers[0], n);
+      const active = b.activeCategories.includes(cat);
+      rows += `<tr class="calc-own ${active ? '' : 'calc-dim'}">
+        <td><span class="badge badge-blue">12²</span> ${esc(v.name)}</td>
+        <td><select data-sel-tier="${esc(v.id)}">${tierOpts(v, s.tierName)}</select></td>
+        <td class="calc-cost">${active ? costCell(c) : '<span class="comp-muted">— not counted</span>'}</td>
+        <td class="comp-muted">${active ? 'in suite total' : 'add a ' + esc(label) + ' tool'}</td>
+      </tr>`;
+    }
+  }
+
   const bar = (lab, cents, cls) =>
     `<div class="comp-bar-row"><span class="comp-bar-lab">${lab}</span>
        <div class="comp-bar-track"><div class="comp-bar ${cls}" style="width:${Math.round(cents / max * 100)}%"></div></div>
        <span class="comp-bar-val">${Competitors.fmtMoney(cents)}/mo</span></div>`;
+  const verdict = cheaper
+    ? `12² saves <strong>${Competitors.fmtMoney(b.savingsCents)}/mo</strong> (${b.savingsPct}%) vs what they have`
+    : b.savingsCents < 0
+    ? `12² costs <strong>${Competitors.fmtMoney(-b.savingsCents)}/mo more</strong> — justify with bundled scope`
+    : `12² matches their current spend — win on bundled scope`;
+
   return `
   <div class="comp-hero">
-    <div class="comp-hero-grid">
-      <div class="comp-hero-card">
-        <div class="comp-hero-label">Competitor stack @ ${n}</div>
-        <div class="comp-hero-num">${Competitors.fmtMoney(stack)}<span>/mo</span></div>
-        <div class="comp-hero-pills">${t.stack.items.map(pill).join('')}</div>
-      </div>
+    <div class="comp-calc-head"><h3>What they have @ ${n} users</h3>
+      <span class="sub">Tick the products they use and pick each subscription level — the 12² suite recomputes to match.</span></div>
+    <table class="calc-table"><thead><tr><th>Product</th><th>Subscription</th><th>Cost @ ${n}</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    <div class="comp-hero-grid totals2">
+      <div class="comp-hero-card"><div class="comp-hero-label">Their stack</div>
+        <div class="comp-hero-num">${Competitors.fmtMoney(b.theirTotal)}<span>/mo</span></div></div>
       <div class="comp-hero-vs">vs</div>
-      <div class="comp-hero-card is-suite">
-        <div class="comp-hero-label">12² suite @ ${n} <span class="badge badge-blue">12²</span></div>
-        <div class="comp-hero-num">${Competitors.fmtMoney(suite)}<span>/mo</span></div>
-        <div class="comp-hero-pills">${t.suite.items.map(pill).join('')}</div>
-      </div>
+      <div class="comp-hero-card is-suite"><div class="comp-hero-label">12² suite <span class="badge badge-blue">12²</span></div>
+        <div class="comp-hero-num">${Competitors.fmtMoney(b.suiteTotal)}<span>/mo</span></div></div>
     </div>
-    <div class="comp-verdict ${cheaper ? 'good' : 'bad'}">
-      ${cheaper
-        ? `12² suite saves <strong>${Competitors.fmtMoney(t.savingsCents)}/mo</strong> (${t.savingsPct}%) vs the competitor stack`
-        : `12² suite costs <strong>${Competitors.fmtMoney(-t.savingsCents)}/mo more</strong> — justify with bundled scope`}
-    </div>
-    <div class="comp-bars">${bar('Competitors', stack, 'fill-stack')}${bar('12² suite', suite, 'fill-suite')}</div>
-    <div class="sub comp-hero-foot">Stack = one product per category (no double-count).${altNote}${quoteNote}</div>
+    <div class="comp-verdict ${cheaper ? 'good' : 'bad'}">${verdict}</div>
+    <div class="comp-bars">${bar('Their stack', b.theirTotal, 'fill-stack')}${bar('12² suite', b.suiteTotal, 'fill-suite')}</div>
   </div>`;
 }
 

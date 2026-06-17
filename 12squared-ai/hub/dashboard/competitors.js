@@ -78,7 +78,7 @@
 
     const suiteItems = doc.twelveSquared.map(v => {
       const c = costAtUsers(v, n);
-      return { name: v.name, category: v.category,
+      return { id: v.id, name: v.name, category: v.category,
         monthlyCents: c.monthlyCents, tierName: c.tierName };
     });
     const suiteTotal = suiteItems.reduce((s, i) => s + (i.monthlyCents || 0), 0);
@@ -88,7 +88,7 @@
       const rivals = doc.competitors
         .filter(v => v.category === cat)
         .map(v => { const c = costAtUsers(v, n);
-          return { name: v.name, category: cat, monthlyCents: c.monthlyCents, tierName: c.tierName }; });
+          return { id: v.id, name: v.name, category: cat, monthlyCents: c.monthlyCents, tierName: c.tierName }; });
       rivals.filter(r => r.monthlyCents === null).forEach(r => quoteOnly.push(r.name));
       const priced = rivals.filter(r => r.monthlyCents !== null)
         .sort((a, b) => a.monthlyCents - b.monthlyCents);
@@ -107,7 +107,69 @@
     };
   }
 
-  const api = { costAtUsers, fmtMoney, daysSince, stackTotals };
+  // Cost of a SPECIFIC chosen tier (the user picked it) under the vendor's
+  // seat model — for the interactive "what they have" basket. Unlike
+  // costAtUsers, it does not auto-select a tier.
+  function costForTier(vendor, tier, n) {
+    const m = vendor.seatModel;
+    if (!tier || tier.quoteOnly)
+      return { monthlyCents: null, tierName: tier ? tier.name : null, seatMath: "Contact sales", warn: null };
+    if (m === "PER_SEAT") {
+      if (tier.monthlyCents === null) return { monthlyCents: null, tierName: tier.name, seatMath: "—", warn: null };
+      const extra = Math.max(0, n - (tier.includedSeats || 0));
+      const monthly = tier.monthlyCents + extra * (tier.additionalSeatCents || 0);
+      return { monthlyCents: monthly, tierName: tier.name,
+        seatMath: `${fmtMoney(tier.monthlyCents)} base (incl. ${tier.includedSeats || 0}) + ${extra} × ${fmtMoney(tier.additionalSeatCents)} = ${fmtMoney(monthly)}/mo`,
+        warn: null };
+    }
+    if (m === "FLAT_SEAT_CAP") {
+      const warn = (tier.seatCap && n > tier.seatCap) ? `over ${tier.seatCap}-seat cap` : null;
+      return { monthlyCents: tier.monthlyCents, tierName: tier.name,
+        seatMath: `flat ${fmtMoney(tier.monthlyCents)}/mo (${tier.name})`, warn };
+    }
+    if (m === "FLAT_CONCURRENCY" || m === "FLAT_ANNUAL") {
+      if (tier.annualTotalCents === null) return { monthlyCents: null, tierName: tier.name, seatMath: "—", warn: null };
+      const monthly = Math.round(tier.annualTotalCents / 12);
+      const note = (m === "FLAT_CONCURRENCY" && tier.concurrency) ? ` · ${tier.concurrency} concurrent` : "";
+      return { monthlyCents: monthly, tierName: tier.name,
+        seatMath: `${fmtMoney(tier.annualTotalCents)}/yr ÷ 12 = ${fmtMoney(monthly)}/mo${note}`, warn: null };
+    }
+    // OWN and anything else: flat monthly, else annual/12
+    if (tier.monthlyCents !== null)
+      return { monthlyCents: tier.monthlyCents, tierName: tier.name, seatMath: `${fmtMoney(tier.monthlyCents)}/mo`, warn: null };
+    if (tier.annualTotalCents !== null) {
+      const mo = Math.round(tier.annualTotalCents / 12);
+      return { monthlyCents: mo, tierName: tier.name, seatMath: `${fmtMoney(tier.annualTotalCents)}/yr ÷ 12 = ${fmtMoney(mo)}/mo`, warn: null };
+    }
+    return { monthlyCents: null, tierName: tier.name, seatMath: "—", warn: null };
+  }
+
+  // "What they have" — a user-built basket. selection: {vendorId: {included, tierName}}.
+  // A 12² product counts in the suite total only when its category has an
+  // included competitor (drop-from-both), keeping the comparison apples-to-apples.
+  function basketTotals(doc, n, selection) {
+    const sel = selection || {};
+    const priceOf = v => {
+      const s = sel[v.id] || {};
+      const tier = v.tiers.find(t => t.name === s.tierName) || firstPriced(v.tiers);
+      const c = costForTier(v, tier, n);
+      return { id: v.id, name: v.name, category: v.category, tierName: tier.name,
+        monthlyCents: c.monthlyCents, warn: c.warn,
+        included: sel[v.id] ? sel[v.id].included === true : false };
+    };
+    const competitors = doc.competitors.map(priceOf);
+    const theirs = competitors.filter(x => x.included && x.monthlyCents !== null);
+    const activeCats = new Set(theirs.map(x => x.category));
+    const suite = doc.twelveSquared.map(priceOf).filter(x => activeCats.has(x.category));
+    const theirTotal = theirs.reduce((s, i) => s + i.monthlyCents, 0);
+    const suiteTotal = suite.reduce((s, i) => s + (i.monthlyCents || 0), 0);
+    const sav = theirTotal - suiteTotal;
+    return { competitors, theirs, suite, theirTotal, suiteTotal,
+      savingsCents: sav, savingsPct: theirTotal > 0 ? Math.round(sav / theirTotal * 100) : 0,
+      activeCategories: [...activeCats] };
+  }
+
+  const api = { costAtUsers, costForTier, fmtMoney, daysSince, stackTotals, basketTotals };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Competitors = api;
 })(typeof window !== "undefined" ? window : this);
