@@ -22,6 +22,10 @@ const hailtrace = {
   seatModel: "QUOTE_ONLY",
   tiers: [{ name: "Maps Only", monthlyCents: null, annualTotalCents: null, quoteOnly: true }],
 };
+const own = {
+  seatModel: "OWN",
+  tiers: [{ name: "Fieldcam", monthlyCents: 4900, quoteOnly: false }],
+};
 
 test("PER_SEAT includes 3 then +$29/user", () => {
   assert.equal(C.costAtUsers(companycam, 1).monthlyCents, 7900);
@@ -46,6 +50,12 @@ test("FLAT_CONCURRENCY is annual/12, independent of N", () => {
 
 test("QUOTE_ONLY returns null", () => {
   assert.equal(C.costAtUsers(hailtrace, 10).monthlyCents, null);
+});
+
+test("OWN returns first non-quote tier's monthlyCents, independent of N", () => {
+  assert.equal(C.costAtUsers(own, 1).monthlyCents, 4900);
+  assert.equal(C.costAtUsers(own, 100).monthlyCents, 4900);
+  assert.equal(C.costAtUsers(own, 1).tierName, "Fieldcam");
 });
 
 test("fmtMoney formats whole and fractional dollars", () => {
