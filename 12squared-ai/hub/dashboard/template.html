@@ -234,6 +234,16 @@
   .calc-table select { background: rgba(255,255,255,.06); color: inherit; border: 1px solid rgba(255,255,255,.14);
     border-radius: 7px; padding: 4px 8px; font-size: 12px; max-width: 240px; }
   .totals2 { margin-top: 6px; }
+  /* proposal control bar */
+  .comp-propbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; }
+  .comp-propbar input[type=text] { flex: 1; min-width: 200px; max-width: 320px; background: rgba(255,255,255,.05);
+    color: inherit; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+  .comp-prop-lab { font-size: 12px; opacity: .7; display: inline-flex; align-items: center; gap: 6px; }
+  .comp-prop-lab input[type=date] { background: rgba(255,255,255,.05); color: inherit;
+    border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+  .comp-btn { background: #3b6fd4; color: #fff; border: 0; border-radius: 8px; padding: 8px 16px;
+    font-size: 13px; font-weight: 600; cursor: pointer; }
+  .comp-btn:hover { background: #4f80e0; }
   @media (max-width: 640px) { .comp-hero-grid { grid-template-columns: 1fr; } .comp-hero-vs { display: none; }
     .calc-table select { max-width: 150px; } }
   .comp-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; }
@@ -305,6 +315,11 @@
     <div class="comp-controls">
       <label for="comp-users">Team size: <strong id="comp-users-val">10</strong> users</label>
       <input type="range" id="comp-users" min="1" max="100" value="10" step="1">
+    </div>
+    <div class="comp-propbar">
+      <input id="comp-prospect" type="text" placeholder="Prepared for (company name)" maxlength="80">
+      <label class="comp-prop-lab">Valid until <input id="comp-valid" type="date"></label>
+      <button id="comp-proposal" class="comp-btn" type="button">Generate Proposal (PDF)</button>
     </div>
     <div id="comp-banner" class="sub"></div>
     <div id="comp-wrap"><div class="empty">Loading…</div></div>
@@ -704,8 +719,11 @@ async function loadCompetitors() {
   };
   if (!_compWired) {
     wrap.addEventListener('change', onCompSelChange);
+    document.querySelector('#comp-proposal').onclick = openProposal;
     _compWired = true;
   }
+  const vi = document.querySelector('#comp-valid');
+  if (vi && !vi.value) { const d = new Date(); d.setDate(d.getDate() + 30); vi.value = d.toISOString().slice(0, 10); }
   renderCompetitors(+slider.value);
 }
 
@@ -896,6 +914,119 @@ function renderCalculator(n) {
     <div class="comp-verdict ${cheaper ? 'good' : 'bad'}">${verdict}</div>
     <div class="comp-bars">${bar('Their stack', b.theirTotal, 'fill-stack')}${bar('12² suite', b.suiteTotal, 'fill-suite')}</div>
   </div>`;
+}
+
+// Build a self-contained, print-styled proposal from the CURRENT basket state.
+function buildProposalHTML(n) {
+  const b = Competitors.basketTotals(_compDoc, n, _compSel);
+  const M = Competitors.fmtMoney;
+  const e = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const prospect = ((document.querySelector('#comp-prospect') || {}).value || '').trim();
+  const validUntil = (document.querySelector('#comp-valid') || {}).value || '';
+  const CATLABEL = { photo_docs: 'Photo Documentation', hail_data: 'Hail / Storm Data', code_reports: 'Code Reports' };
+
+  const notes = [];
+  const marker = (item) => {
+    const v = vendorById(item.id);
+    const tier = v.tiers.find(t => t.name === item.tierName) || v.tiers[0];
+    let txt;
+    if (v.seatModel === 'OWN') txt = `${v.name} ${tier.name} — 12² list price.`;
+    else if (tier.confidence === 'quote' && !tier.quoteOnly) txt = `${v.name} ${tier.name} — owner-provided estimate; ${v.name} publishes no public price.`;
+    else if (tier.confidence === 'archive') txt = `${v.name} ${tier.name} — archived figure (${tier.lastVerified}); ${tier.sourceUrl}`;
+    else txt = `${v.name} ${tier.name} — verified ${tier.lastVerified}; ${tier.sourceUrl}`;
+    notes.push(txt);
+    return notes.length;
+  };
+  const row = (item, own) => `<tr><td>${e(item.name)}${own ? ' <span class="own">12²</span>' : ''}</td>`
+    + `<td>${e(item.tierName)}</td>`
+    + `<td class="num">${M(item.monthlyCents)}/mo<sup>${marker(item)}</sup>${item.warn ? ` <span class="warn">${e(item.warn)}</span>` : ''}</td></tr>`;
+
+  let theirRows = '', suiteRows = '';
+  for (const [cat] of CATS) {
+    const t = b.theirs.filter(x => x.category === cat);
+    const s = b.suite.filter(x => x.category === cat);
+    if (t.length) theirRows += `<tr class="cat"><td colspan="3">${CATLABEL[cat]}</td></tr>` + t.map(x => row(x, false)).join('');
+    if (s.length) suiteRows += `<tr class="cat"><td colspan="3">${CATLABEL[cat]}</td></tr>` + s.map(x => row(x, true)).join('');
+  }
+
+  const moSave = b.savingsCents, yrSave = moSave * 12, cheaper = moSave > 0;
+  const headline = cheaper ? `Save ${M(moSave)}/mo &middot; ${M(yrSave)}/yr`
+    : moSave < 0 ? `${M(-moSave)}/mo more — for one unified suite`
+    : `Match your current spend — with one unified suite`;
+  const oldest = [...b.theirs, ...b.suite].map(x => {
+    const v = vendorById(x.id); const tr = v.tiers.find(t => t.name === x.tierName) || v.tiers[0];
+    return tr.lastVerified;
+  }).filter(Boolean).sort()[0] || COMP_TODAY;
+
+  const footRows = notes.map((t, i) => `<li>${e(t)}</li>`).join('');
+  const noteList = footRows ? `<ol class="foot">${footRows}</ol>` : '';
+
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>12² Pricing Proposal${prospect ? ' — ' + e(prospect) : ''}</title>
+<style>
+  *{box-sizing:border-box} html,body{margin:0;background:#fff;color:#0e1b2e;
+    font:14px/1.55 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .page{max-width:760px;margin:0 auto;padding:40px 44px}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0e1b2e;padding-bottom:14px}
+  .brand{font-size:22px;font-weight:800;letter-spacing:-.01em} .brand b{color:#3b6fd4}
+  .doctype{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#5a6b86;margin-top:5px}
+  .meta{font-size:12px;color:#5a6b86;text-align:right;line-height:1.8}
+  h1{font-size:19px;margin:22px 0 0} .prepared{color:#5a6b86;margin:2px 0 18px}
+  .hero{background:#0e1b2e;color:#fff;border-radius:12px;padding:18px 22px;margin-bottom:22px}
+  .hero .big{font-size:26px;font-weight:800;line-height:1.1} .hero .sub{font-size:12px;opacity:.82;margin-top:4px}
+  .cmp{display:flex;gap:14px;margin-bottom:22px}
+  .cmp .box{flex:1;border:1px solid #dbe2ee;border-radius:10px;padding:13px 15px}
+  .cmp .box.suite{border-color:#3b6fd4;background:#f3f7ff}
+  .cmp .lab{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#5a6b86}
+  .cmp .val{font-size:22px;font-weight:800;margin-top:3px} .cmp .yr{font-size:12px;color:#5a6b86}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#3b6fd4;margin:18px 0 6px}
+  table{width:100%;border-collapse:collapse} td{padding:7px 4px;border-bottom:1px solid #eef1f6;font-size:13px}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr.cat td{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#9aa6ba;border-bottom:none;padding-top:10px}
+  tr.tot td{font-weight:800;border-top:2px solid #0e1b2e;border-bottom:none}
+  .own{background:#e6efff;color:#3b6fd4;font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px}
+  .warn{background:#fff3e0;color:#b5651d;font-size:10px;padding:1px 5px;border-radius:5px}
+  sup{color:#9aa6ba;font-size:9px}
+  .foot{font-size:10.5px;color:#5a6b86;margin:10px 0 0;padding-left:18px} .foot li{margin:2px 0}
+  .disc{font-size:10.5px;color:#7a8699;margin-top:18px;border-top:1px solid #eef1f6;padding-top:12px}
+  .pb{margin-top:6px;font-weight:700;color:#0e1b2e}
+  @media print{.page{padding:24px 28px} @page{margin:14mm}}
+</style></head><body><div class="page">
+  <div class="top">
+    <div><div class="brand">12<b>²</b> AI</div><div class="doctype">Pricing Proposal</div></div>
+    <div class="meta">
+      ${prospect ? `Prepared for <strong>${e(prospect)}</strong><br>` : ''}
+      Generated ${e(COMP_TODAY)}<br>${validUntil ? `Valid until ${e(validUntil)}<br>` : ''}
+      Team size: ${n} ${n === 1 ? 'user' : 'users'}
+    </div>
+  </div>
+  <h1>Your software cost vs. the 12² suite</h1>
+  <p class="prepared">${prospect ? 'Prepared for ' + e(prospect) + '. ' : ''}Based on the subscriptions selected below, at ${n} ${n === 1 ? 'user' : 'users'}.</p>
+  <div class="hero"><div class="big">${headline}</div>
+    <div class="sub">Your current stack ${M(b.theirTotal)}/mo vs. the 12² suite ${M(b.suiteTotal)}/mo.</div></div>
+  <div class="cmp">
+    <div class="box"><div class="lab">Your current stack</div><div class="val">${M(b.theirTotal)}<span style="font-size:13px">/mo</span></div><div class="yr">${M(b.theirTotal * 12)}/yr</div></div>
+    <div class="box suite"><div class="lab">12² suite (proposed)</div><div class="val">${M(b.suiteTotal)}<span style="font-size:13px">/mo</span></div><div class="yr">${M(b.suiteTotal * 12)}/yr</div></div>
+  </div>
+  <h2>Your current tools</h2>
+  <table><tbody>${theirRows || '<tr><td colspan="3" style="color:#9aa6ba">No products selected.</td></tr>'}
+    <tr class="tot"><td>Total</td><td></td><td class="num">${M(b.theirTotal)}/mo</td></tr></tbody></table>
+  <h2>Proposed: the 12² suite</h2>
+  <table><tbody>${suiteRows || '<tr><td colspan="3" style="color:#9aa6ba">—</td></tr>'}
+    <tr class="tot"><td>Total</td><td></td><td class="num">${M(b.suiteTotal)}/mo</td></tr></tbody></table>
+  ${noteList}
+  <div class="disc">Competitor pricing reflects publicly listed prices, archived figures, or owner-provided estimates as noted above, current as of ${e(oldest)}; this proposal reflects only the subscriptions and team size selected and updates as those change. 12² figures are list prices. Provided for evaluation; not a binding quote.
+    <div class="pb">Powered by 12² AI</div></div>
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},180)}<\/script>
+</body></html>`;
+}
+
+function openProposal() {
+  const html = buildProposalHTML(+document.querySelector('#comp-users').value);
+  const w = window.open('', '_blank');
+  if (!w) { alert('Allow pop-ups for this site to generate the proposal.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
 }
 
 /* ---- boot ---------------------------------------------------------------- */
