@@ -206,6 +206,12 @@
   .tsq-powered strong{font-weight:600}
   .appfoot{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:0 24px 40px;text-align:center;color:var(--muted)}
   .lq-powered{position:absolute;left:0;right:0;bottom:24px;z-index:10;text-align:center;color:rgba(255,255,255,.85)}
+  .comp-rec { padding: 8px 10px; border-left: 3px solid #9bf; margin: 6px 0; background: rgba(80,140,255,.06); }
+  .comp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .comp-card { border: 1px solid rgba(255,255,255,.10); border-radius: 10px; padding: 12px; }
+  .comp-card-h { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .comp-card-sec { margin-top: 8px; }
+  .comp-card-sec ul { margin: 4px 0 0; padding-left: 18px; }
 </style>
 </head>
 <body>
@@ -699,6 +705,51 @@ function renderCompetitors(n) {
     html += '</tbody></table>';
   }
   document.querySelector('#comp-wrap').innerHTML = html;
+  document.querySelector('#comp-wrap').insertAdjacentHTML('beforeend', renderRecommendations(n));
+  document.querySelector('#comp-wrap').insertAdjacentHTML('beforeend', renderBattlecards(n));
+}
+
+function renderRecommendations(n) {
+  let cards = '';
+  for (const own of _compDoc.twelveSquared) {
+    const ownCost = Competitors.costAtUsers(own, n);
+    if (ownCost.monthlyCents === null) continue;
+    for (const rivalId of own.competesWith) {
+      const rival = vendorById(rivalId);
+      if (!rival) continue;
+      const rc = Competitors.costAtUsers(rival, n);
+      let verdict;
+      if (rc.monthlyCents === null) {
+        verdict = `${esc(rival.name)} is quote-only — lead with 12²'s transparent ${Competitors.fmtMoney(ownCost.monthlyCents)}/mo.`;
+      } else {
+        const delta = rc.monthlyCents - ownCost.monthlyCents;
+        verdict = delta > 0
+          ? `12² is ${Competitors.fmtMoney(delta)}/mo cheaper than ${esc(rival.name)} at ${n} users.`
+          : delta < 0
+          ? `12² is ${Competitors.fmtMoney(-delta)}/mo more than ${esc(rival.name)} at ${n} users — justify with bundled scope.`
+          : `12² matches ${esc(rival.name)} at ${n} users — win on bundled scope.`;
+      }
+      cards += `<div class="comp-rec"><strong>${esc(own.name)}</strong> vs ${esc(rival.name)}: ${verdict}</div>`;
+    }
+  }
+  return `<h3>Recommendations @ ${n} users</h3>${cards || '<p class="sub">No priced comparison available.</p>'}`;
+}
+
+function renderBattlecards(n) {
+  let cards = '';
+  for (const v of _compDoc.competitors) {
+    const c = Competitors.costAtUsers(v, n);
+    const price = c.monthlyCents !== null ? `${Competitors.fmtMoney(c.monthlyCents)}/mo @ ${n}` : 'Contact sales';
+    const gaps = (v.gaps || []).map(g => `<li>${esc(g)}</li>`).join('');
+    const wins = (v.whyWeWin || []).map(w => `<li>${esc(w)}</li>`).join('');
+    cards += `<div class="comp-card">
+      <div class="comp-card-h"><strong>${esc(v.name)}</strong><span>${price}</span></div>
+      <div class="sub">${esc(v.seatModel)} · ${esc(v.notes || '')}</div>
+      ${gaps ? `<div class="comp-card-sec"><em>Gaps</em><ul>${gaps}</ul></div>` : ''}
+      ${wins ? `<div class="comp-card-sec"><em>Why 12² wins</em><ul>${wins}</ul></div>` : ''}
+    </div>`;
+  }
+  return `<h3>Battlecards</h3><div class="comp-cards">${cards}</div>`;
 }
 
 /* ---- boot ---------------------------------------------------------------- */
