@@ -62,6 +62,8 @@ test("fmtMoney formats whole and fractional dollars", () => {
   assert.equal(C.fmtMoney(7900), "$79");
   assert.equal(C.fmtMoney(8325), "$83.25");
   assert.equal(C.fmtMoney(null), "—");
+  assert.equal(C.fmtMoney(500000), "$5,000");      // thousands separator
+  assert.equal(C.fmtMoney(250704), "$2,507.04");   // separator + cents
 });
 
 test("daysSince computes calendar days", () => {

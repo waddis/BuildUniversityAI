@@ -2,7 +2,10 @@
   function fmtMoney(cents) {
     if (cents === null || cents === undefined) return "—";
     const dollars = cents / 100;
-    return Number.isInteger(dollars) ? "$" + dollars : "$" + dollars.toFixed(2);
+    const opts = Number.isInteger(dollars)
+      ? { maximumFractionDigits: 0 }
+      : { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+    return "$" + dollars.toLocaleString("en-US", opts);
   }
 
   function daysSince(isoDate, todayIso) {

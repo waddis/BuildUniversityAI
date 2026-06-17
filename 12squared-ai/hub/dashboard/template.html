@@ -950,9 +950,14 @@ function buildProposalHTML(n) {
   }
 
   const moSave = b.savingsCents, yrSave = moSave * 12, cheaper = moSave > 0;
-  const headline = cheaper ? `Save ${M(moSave)}/mo &middot; ${M(yrSave)}/yr`
-    : moSave < 0 ? `${M(-moSave)}/mo more — for one unified suite`
-    : `Match your current spend — with one unified suite`;
+  const headline = cheaper ? `Save ${M(moSave)} per month &middot; ${M(yrSave)} per year`
+    : moSave < 0 ? `${M(-moSave)} more per month, in one unified suite`
+    : `The same monthly cost, in one unified suite`;
+  const saveBand = cheaper
+    ? `<div class="save pos"><span class="lab">Total savings with 12²</span><span class="val">${M(moSave)}/mo &middot; ${M(yrSave)}/yr${b.savingsPct > 0 ? ` (${b.savingsPct}% lower)` : ''}</span></div>`
+    : moSave < 0
+    ? `<div class="save neg"><span class="lab">Additional cost with 12²</span><span class="val">${M(-moSave)}/mo &middot; ${M(-yrSave)}/yr</span></div>`
+    : `<div class="save zero"><span class="lab">Total savings with 12²</span><span class="val">$0 — the same monthly cost</span></div>`;
   const oldest = [...b.theirs, ...b.suite].map(x => {
     const v = vendorById(x.id); const tr = v.tiers.find(t => t.name === x.tierName) || v.tiers[0];
     return tr.lastVerified;
@@ -979,6 +984,10 @@ function buildProposalHTML(n) {
   .cmp .box.suite{border-color:#3b6fd4;background:#f3f7ff}
   .cmp .lab{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#5a6b86}
   .cmp .val{font-size:22px;font-weight:800;margin-top:3px} .cmp .yr{font-size:12px;color:#5a6b86}
+  .save{display:flex;justify-content:space-between;align-items:center;border-radius:10px;padding:12px 16px;margin:0 0 22px}
+  .save .lab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+  .save .val{font-size:17px;font-weight:800}
+  .save.pos{background:#e7f7ee;color:#157a47} .save.neg{background:#fdeee2;color:#a85618} .save.zero{background:#eef1f6;color:#5a6b86}
   h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#3b6fd4;margin:18px 0 6px}
   table{width:100%;border-collapse:collapse} td{padding:7px 4px;border-bottom:1px solid #eef1f6;font-size:13px}
   td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -1001,13 +1010,14 @@ function buildProposalHTML(n) {
     </div>
   </div>
   <h1>Your software cost vs. the 12² suite</h1>
-  <p class="prepared">${prospect ? 'Prepared for ' + e(prospect) + '. ' : ''}Based on the subscriptions selected below, at ${n} ${n === 1 ? 'user' : 'users'}.</p>
+  <p class="prepared">Pricing is based on the subscriptions selected below, for a team of ${n} ${n === 1 ? 'user' : 'users'}.</p>
   <div class="hero"><div class="big">${headline}</div>
-    <div class="sub">Your current stack ${M(b.theirTotal)}/mo vs. the 12² suite ${M(b.suiteTotal)}/mo.</div></div>
+    <div class="sub">Your current stack totals ${M(b.theirTotal)}/mo; the 12² suite totals ${M(b.suiteTotal)}/mo.</div></div>
   <div class="cmp">
     <div class="box"><div class="lab">Your current stack</div><div class="val">${M(b.theirTotal)}<span style="font-size:13px">/mo</span></div><div class="yr">${M(b.theirTotal * 12)}/yr</div></div>
     <div class="box suite"><div class="lab">12² suite (proposed)</div><div class="val">${M(b.suiteTotal)}<span style="font-size:13px">/mo</span></div><div class="yr">${M(b.suiteTotal * 12)}/yr</div></div>
   </div>
+  ${saveBand}
   <h2>Your current tools</h2>
   <table><tbody>${theirRows || '<tr><td colspan="3" style="color:#9aa6ba">No products selected.</td></tr>'}
     <tr class="tot"><td>Total</td><td></td><td class="num">${M(b.theirTotal)}/mo</td></tr></tbody></table>
@@ -1015,7 +1025,7 @@ function buildProposalHTML(n) {
   <table><tbody>${suiteRows || '<tr><td colspan="3" style="color:#9aa6ba">—</td></tr>'}
     <tr class="tot"><td>Total</td><td></td><td class="num">${M(b.suiteTotal)}/mo</td></tr></tbody></table>
   ${noteList}
-  <div class="disc">Competitor pricing reflects publicly listed prices, archived figures, or owner-provided estimates as noted above, current as of ${e(oldest)}; this proposal reflects only the subscriptions and team size selected and updates as those change. 12² figures are list prices. Provided for evaluation; not a binding quote.
+  <div class="disc">Competitor pricing reflects publicly listed prices, archived figures, or owner-provided estimates as noted above, current as of ${e(oldest)}. This proposal reflects only the subscriptions and team size selected, and it updates as those selections change. 12² figures are list prices. It is provided for evaluation only and is not a binding quote.
     <div class="pb">Powered by 12² AI</div></div>
 </div>
 <script>window.onload=function(){setTimeout(function(){window.print()},180)}<\/script>
