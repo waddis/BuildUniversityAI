@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════
+   Architectural Void — Dark Design System
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Typography: Space Grotesk (headlines/labels) + Inter (body) */
+body {
+  font-family: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+  color: #e5e2e1;
+  background: #131313;
+}
+
+/* Design system surfaces — dark palette */
+:root {
+  --surface: #131313;
+  --surface-low: #1c1b1b;
+  --surface-container: #201f1f;
+  --surface-high: #2a2a2a;
+  --surface-highest: #353534;
+  --primary: #FF8C00;
+  --primary-glow: #ffb77d;
+  --secondary: #82CFFF;
+  --tertiary: #ADCBDA;
+  --on-surface: #e5e2e1;
+  --outline-variant: #564334;
+  --outline-ghost: rgba(86, 67, 52, 0.15);
+}
+
+/* Headline font */
+.font-headline {
+  font-family: var(--font-space-grotesk), 'Space Grotesk', 'Inter', sans-serif;
+}
+.font-label {
+  font-family: var(--font-space-grotesk), 'Space Grotesk', 'Inter', monospace;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 140, 0, 0.15); }
+  50% { box-shadow: 0 0 40px rgba(255, 140, 0, 0.3); }
+}
+
+/* Focus — orange ring */
+*:focus-visible {
+  outline: 2px solid rgba(255, 140, 0, 0.4);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Scrollbar — dark, minimal */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(229, 226, 225, 0.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(229, 226, 225, 0.15); }
+
+::selection { background: rgba(255, 140, 0, 0.2); }
+
+/* Reduced motion — respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Ghost borders — tonal surface shifts, NOT 1px borders */
+.ghost-border { box-shadow: inset 0 0 0 1px var(--outline-ghost); }
+
+/* Ambient shadows — on-surface at 4% opacity, 32px blur */
+.shadow-ambient { box-shadow: 0 16px 48px rgba(229, 226, 225, 0.04); }
+.shadow-ambient-sm { box-shadow: 0 8px 32px rgba(229, 226, 225, 0.04); }
+
+/* Glass panels — surface-high at 70% + 20px blur */
+.glass { background: rgba(42, 42, 42, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.glass-heavy { background: rgba(42, 42, 42, 0.85); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); }
+
+/* Primary gradient — construction orange */
+.gradient-primary { background: linear-gradient(135deg, #FF8C00, #ffb77d); }
+
+/* Text gradient helper */
+.text-gradient-primary {
+  background: linear-gradient(135deg, #FF8C00, #ffb77d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

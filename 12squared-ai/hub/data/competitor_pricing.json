@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "stalenessWarnDays": 60,
+  "twelveSquared": [
+    {
+      "id": "fieldcam", "name": "Fieldcam", "category": "photo_docs",
+      "competesWith": ["companycam"], "url": "internal", "pricingPublic": false,
+      "seatModel": "OWN",
+      "tiers": [
+        {"name": "Fieldcam", "monthlyCents": 4900, "annualTotalCents": null,
+         "billingUnit": "month", "includedSeats": null, "additionalSeatCents": null,
+         "seatCap": null, "features": ["field photo/video docs", "projects", "share links"],
+         "overage": null, "quoteOnly": false, "concurrency": null,
+         "sourceUrl": "internal:bin/admin_metrics.py", "lastVerified": "2026-06-17",
+         "confidence": "internal"}
+      ],
+      "notes": "Seed from admin_metrics ADDON_PRICE_CENTS; owner to confirm seat model.",
+      "gaps": [], "whyWeWin": []
+    },
+    {
+      "id": "hailscan", "name": "HailScan", "category": "hail_data",
+      "competesWith": ["interactivehailmaps", "hailtrace"], "url": "internal", "pricingPublic": false,
+      "seatModel": "OWN",
+      "tiers": [
+        {"name": "Single State", "monthlyCents": 14900, "annualTotalCents": null,
+         "billingUnit": "month", "includedSeats": null, "additionalSeatCents": null,
+         "seatCap": null, "features": ["1 state hail monitoring"], "overage": null,
+         "quoteOnly": false, "concurrency": null, "sourceUrl": "internal:bin/admin_metrics.py",
+         "lastVerified": "2026-06-17", "confidence": "internal"},
+        {"name": "Three State", "monthlyCents": 29900, "annualTotalCents": null,
+         "billingUnit": "month", "includedSeats": null, "additionalSeatCents": null,
+         "seatCap": null, "features": ["3 states"], "overage": null, "quoteOnly": false,
+         "concurrency": null, "sourceUrl": "internal:bin/admin_metrics.py",
+         "lastVerified": "2026-06-17", "confidence": "internal"},
+        {"name": "Nationwide", "monthlyCents": 79900, "annualTotalCents": null,
+         "billingUnit": "month", "includedSeats": null, "additionalSeatCents": null,
+         "seatCap": null, "features": ["nationwide"], "overage": null, "quoteOnly": false,
+         "concurrency": null, "sourceUrl": "internal:bin/admin_metrics.py",
+         "lastVerified": "2026-06-17", "confidence": "internal"}
+      ],
+      "notes": "Seed from admin_metrics TIER_PRICE_CENTS; owner to confirm.",
+      "gaps": [], "whyWeWin": []
+    },
+    {
+      "id": "codesandmore", "name": "Codes&More", "category": "code_reports",
+      "competesWith": ["oneclickcode"], "url": "internal", "pricingPublic": false,
+      "seatModel": "OWN",
+      "tiers": [
+        {"name": "Codes&More", "monthlyCents": 9900, "annualTotalCents": null,
+         "billingUnit": "month", "includedSeats": null, "additionalSeatCents": null,
+         "seatCap": null, "features": ["building-code reports"], "overage": null,
+         "quoteOnly": false, "concurrency": null, "sourceUrl": "internal:bin/admin_metrics.py",
+         "lastVerified": "2026-06-17", "confidence": "internal"}
+      ],
+      "notes": "Seed from admin_metrics ADDON_PRICE_CENTS; owner to confirm.",
+      "gaps": [], "whyWeWin": []
+    }
+  ],
+  "competitors": [
+    {
+      "id": "companycam", "name": "CompanyCam", "category": "photo_docs",
+      "competesWith": ["fieldcam"], "url": "https://companycam.com/pricing",
+      "pricingPublic": true, "seatModel": "PER_SEAT",
+      "tiers": [
+        {"name": "Pro", "monthlyCents": 7900, "annualTotalCents": null,
+         "billingUnit": "month_billed_annually", "includedSeats": 3, "additionalSeatCents": 2900,
+         "seatCap": null, "features": ["unlimited projects/storage", "basic checklists", "PDF reports"],
+         "overage": null, "quoteOnly": false, "concurrency": null,
+         "sourceUrl": "https://companycam.com/pricing", "lastVerified": "2026-06-17",
+         "confidence": "verified"},
+        {"name": "Premium", "monthlyCents": 12900, "annualTotalCents": null,
+         "billingUnit": "month_billed_annually", "includedSeats": 3, "additionalSeatCents": 2900,
+         "seatCap": null, "features": ["unlimited AI actions", "custom templates", "company dashboard"],
+         "overage": null, "quoteOnly": false, "concurrency": null,
+         "sourceUrl": "https://companycam.com/pricing", "lastVerified": "2026-06-17",
+         "confidence": "verified"},
+        {"name": "Elite", "monthlyCents": 19900, "annualTotalCents": null,
+         "billingUnit": "month_billed_annually", "includedSeats": 3, "additionalSeatCents": 2900,
+         "seatCap": null, "features": ["payments", "e-signatures", "review collection", "LiDAR"],
+         "overage": null, "quoteOnly": false, "concurrency": null,
+         "sourceUrl": "https://companycam.com/pricing", "lastVerified": "2026-06-17",
+         "confidence": "verified"},
+        {"name": "Enterprise", "monthlyCents": null, "annualTotalCents": null,
+         "billingUnit": "quote", "includedSeats": null, "additionalSeatCents": null,
+         "seatCap": null, "features": ["50+ employees"], "overage": null, "quoteOnly": true,
+         "concurrency": null, "sourceUrl": "https://companycam.com/pricing",
+         "lastVerified": "2026-06-17", "confidence": "quote"}
+      ],
+      "notes": "Prices are annual-billing per-month; flat base includes 3 users. Monthly-billing base (~$34/user) not published.",
+      "gaps": ["no hail/storm data", "no building-code reports"],
+      "whyWeWin": ["12² bundles photo docs + hail + code in one subscription", "no 3-user floor"]
+    },
+    {
+      "id": "oneclickcode", "name": "One Click Code", "category": "code_reports",
+      "competesWith": ["codesandmore"], "url": "https://www.oneclickcode.com/pricing",
+      "pricingPublic": true, "seatModel": "FLAT_SEAT_CAP",
+      "tiers": [
+        {"name": "Pro", "monthlyCents": 4900, "annualTotalCents": null, "billingUnit": "month",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": 50,
+         "features": ["30 jurisdiction / 8 code / 4 weather reports"], "overage": "$2 juris / $10 code",
+         "quoteOnly": false, "concurrency": null, "sourceUrl": "https://www.oneclickcode.com/pricing",
+         "lastVerified": "2026-06-17", "confidence": "verified"},
+        {"name": "Premium", "monthlyCents": 11500, "annualTotalCents": null, "billingUnit": "month",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["60 / 20 / 20 reports", "unlimited seats"], "overage": "$2 juris / $10 code",
+         "quoteOnly": false, "concurrency": null, "sourceUrl": "https://www.oneclickcode.com/pricing",
+         "lastVerified": "2026-06-17", "confidence": "verified"},
+        {"name": "Small Business", "monthlyCents": 24900, "annualTotalCents": null, "billingUnit": "month",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["50 code / 50 weather"], "overage": "$8/report", "quoteOnly": false,
+         "concurrency": null, "sourceUrl": "https://help.oneclickcode.com/understanding-our-business-plan-tiers-options",
+         "lastVerified": "2026-06-17", "confidence": "verified"},
+        {"name": "Medium Business", "monthlyCents": 49900, "annualTotalCents": null, "billingUnit": "month",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["100 / 100"], "overage": "$7/report", "quoteOnly": false, "concurrency": null,
+         "sourceUrl": "https://help.oneclickcode.com/understanding-our-business-plan-tiers-options",
+         "lastVerified": "2026-06-17", "confidence": "verified"},
+        {"name": "Large Business", "monthlyCents": 98900, "annualTotalCents": null, "billingUnit": "month",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["200 / 200"], "overage": "$6/report", "quoteOnly": false, "concurrency": null,
+         "sourceUrl": "https://help.oneclickcode.com/understanding-our-business-plan-tiers-options",
+         "lastVerified": "2026-06-17", "confidence": "verified"}
+      ],
+      "notes": "Flat per-tier, NO per-seat charge. Pro caps at 50 seats; Premium+ unlimited. Annual $ not published (only % savings). Domain is .com not .io.",
+      "gaps": ["no photo documentation", "no hail/storm mapping"],
+      "whyWeWin": ["12² bundles code + hail + photo docs", "single suite subscription"]
+    },
+    {
+      "id": "interactivehailmaps", "name": "Interactive Hail Maps", "category": "hail_data",
+      "competesWith": ["hailscan"], "url": "https://www.interactivehailmaps.com/pricing-page/",
+      "pricingPublic": true, "seatModel": "FLAT_CONCURRENCY",
+      "tiers": [
+        {"name": "One State", "monthlyCents": null, "annualTotalCents": 99900, "billingUnit": "year",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["1 state/region", "10+ yrs history", "contact data", "radar alerts"],
+         "overage": null, "quoteOnly": false, "concurrency": 5,
+         "sourceUrl": "https://www.interactivehailmaps.com/pricing-page/",
+         "lastVerified": "2026-06-17", "confidence": "verified"},
+        {"name": "Three State", "monthlyCents": null, "annualTotalCents": 149900, "billingUnit": "year",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["any 3 regions", "everything in One State"], "overage": null,
+         "quoteOnly": false, "concurrency": 5,
+         "sourceUrl": "https://www.interactivehailmaps.com/pricing-page/",
+         "lastVerified": "2026-06-17", "confidence": "verified"},
+        {"name": "Nationwide", "monthlyCents": null, "annualTotalCents": 199900, "billingUnit": "year",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["nationwide", "everything"], "overage": null, "quoteOnly": false, "concurrency": 5,
+         "sourceUrl": "https://www.interactivehailmaps.com/pricing-page/",
+         "lastVerified": "2026-06-17", "confidence": "verified"}
+      ],
+      "notes": "Annual-only by geographic footprint; installments available (e.g. 2×$529 for One State). Prices verified live 2026-06-17. Concurrency (5 simultaneous sessions, not headcount) is FAQ-sourced, not on the pricing page; extra concurrency is phone-quote-only.",
+      "gaps": ["no photo documentation", "no building-code reports"],
+      "whyWeWin": ["12² priced per-month, not annual-lock", "bundled with photo docs + code"]
+    },
+    {
+      "id": "hailtrace", "name": "HailTrace", "category": "hail_data",
+      "competesWith": ["hailscan"], "url": "https://hailtrace.com/plans",
+      "pricingPublic": false, "seatModel": "FLAT_ANNUAL",
+      "tiers": [
+        {"name": "Free", "monthlyCents": 0, "annualTotalCents": null, "billingUnit": "month",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["limited maps/data"], "overage": null, "quoteOnly": false, "concurrency": null,
+         "sourceUrl": "https://hailtrace.com/plans", "lastVerified": "2026-06-17", "confidence": "verified"},
+        {"name": "Maps Only", "monthlyCents": null, "annualTotalCents": null, "billingUnit": "quote",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["maps"], "overage": null, "quoteOnly": true, "concurrency": null,
+         "sourceUrl": "https://hailtrace.com/plans", "lastVerified": "2026-06-17", "confidence": "quote"},
+        {"name": "Maps & Data", "monthlyCents": null, "annualTotalCents": 500000, "billingUnit": "year",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["maps + data"], "overage": null, "quoteOnly": false, "concurrency": null,
+         "sourceUrl": "owner-provided estimate (HailTrace publishes no public price)", "lastVerified": "2026-06-17", "confidence": "quote"},
+        {"name": "Enterprise", "monthlyCents": null, "annualTotalCents": null, "billingUnit": "quote",
+         "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
+         "features": ["custom"], "overage": null, "quoteOnly": true, "concurrency": null,
+         "sourceUrl": "https://hailtrace.com/plans", "lastVerified": "2026-06-17", "confidence": "quote"}
+      ],
+      "notes": "HailTrace publishes no public price. Maps & Data listed at $5,000/yr per owner-provided estimate (confidence: quote, not a verified public figure); Maps Only and Enterprise remain quote-only. Do NOT treat as a confirmed public price.",
+      "gaps": ["no public pricing (friction)", "no photo docs", "no code reports"],
+      "whyWeWin": ["12² publishes transparent pricing", "all-in-one suite"]
+    }
+  ]
+}

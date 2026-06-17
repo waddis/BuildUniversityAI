@@ -1,0 +1,1410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12² AI — Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0c0e12; --panel:#13161c; --panel2:#171b22; --line:#242a33;
+    --ink:#e8ebf0; --muted:#8b94a3; --accent:#6ea8fe; --accent2:#3d6fd4;
+    --ok:#46c08a; --warn:#e0b54a; --bad:#e06a6a; --radius:6px;
+    --mono:"SF Mono",ui-monospace,"Roboto Mono",Menlo,monospace;
+    --ease:cubic-bezier(0.16,1,0.3,1);
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; }
+  /* ambient key light + grain, matching the landing page */
+  body::before { content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:radial-gradient(900px 480px at 72% -12%,rgba(110,168,254,.06),transparent 60%); }
+  #grain { position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.03; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  main, #login { position:relative; z-index:2; }
+  a { color:var(--accent); text-decoration:none; }
+  ::selection { background:var(--accent2); color:var(--ink); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+  header { display:flex; align-items:center; gap:18px; padding:0 22px; height:60px;
+    border-bottom:1px solid var(--line); background:rgba(12,14,18,.86);
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    position:sticky; top:0; z-index:5; }
+  .brand { font-weight:600; font-size:17px; letter-spacing:-0.02em; }
+  .brand sup { color:var(--accent); }
+  nav { display:flex; gap:4px; margin-left:10px; }
+  nav button { background:none; border:0; color:var(--muted); padding:10px 12px; cursor:pointer;
+    font:500 11px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase;
+    position:relative; transition:color .2s ease; }
+  nav button:hover { color:var(--ink); }
+  nav button.active { color:var(--ink); }
+  nav button.active::after { content:""; position:absolute; left:12px; right:12px; bottom:0;
+    height:1px; background:var(--accent); }
+  .spacer { flex:1; }
+  .who { color:var(--muted); font-size:12px; font-family:var(--mono); letter-spacing:.04em; }
+  .btn { display:inline-flex; align-items:center; justify-content:center;
+    background:var(--accent); color:#0c0e12; border:0; border-radius:var(--radius);
+    padding:9px 16px; cursor:pointer; font-size:13px; font-weight:600; letter-spacing:.01em;
+    text-decoration:none; transition:background-color .15s var(--ease); }
+  .btn:hover { background:#83b3ff; }
+  .btn.ghost { background:transparent; border:1px solid var(--line); color:var(--ink); font-weight:500; }
+  .btn.ghost:hover { background:transparent; border-color:var(--accent2); }
+  main { padding:32px 24px 64px; max-width:1200px; margin:0 auto; view-transition-name:hubmain; }
+  .view { display:none; }
+  .view.active { display:block; }
+  h2 { font-size:22px; letter-spacing:-0.015em; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 24px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:24px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; }
+  .card .k { color:var(--muted); font:500 11px/1 var(--mono); text-transform:uppercase; letter-spacing:.14em; }
+  .card .v { font-size:26px; font-weight:600; margin-top:8px; font-variant-numeric:tabular-nums; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+  .tile { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:22px;
+    transition:border-color .2s var(--ease), transform .35s var(--ease), box-shadow .35s var(--ease); }
+  .tile:hover { border-color:#33415a; transform:translateY(-2px);
+    box-shadow:0 18px 40px -28px rgba(0,0,0,.7); }
+  .tile h3 { margin:0 0 6px; font-size:17px; letter-spacing:-0.01em; }
+  .tile .state { font-size:12px; color:var(--muted); margin-bottom:16px; }
+  .pill { display:inline-block; font:500 10px/1.6 var(--mono); letter-spacing:.08em;
+    text-transform:uppercase; padding:2px 8px; border-radius:999px;
+    border:1px solid var(--line); color:var(--muted); }
+  .pill.ok { color:var(--ok); border-color:#2a4a3c; }
+  .pill.warn { color:var(--warn); border-color:#4a4326; }
+  .pill.bad { color:var(--bad); border-color:#4a2a2a; }
+  .pill.accent { color:var(--accent); border-color:#27384f; }
+  /* segmentation filter chips */
+  .seg-filters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+  .seg-chip { background:var(--panel); border:1px solid var(--line); color:var(--muted);
+    border-radius:999px; padding:7px 14px; cursor:pointer;
+    font:500 11px/1 var(--mono); letter-spacing:.08em; text-transform:uppercase;
+    transition:color .15s, border-color .15s, background-color .15s; }
+  .seg-chip:hover { color:var(--ink); }
+  .seg-chip.on { color:var(--ink); border-color:var(--accent2); background:var(--panel2); }
+  .seg-chip b { color:var(--accent); font-weight:600; margin-left:4px; }
+  .seg-chip.alert.on, .seg-chip.alert:hover { border-color:#4a2a2a; }
+  .seg-chip.alert b { color:var(--bad); }
+  /* seat-usage bar */
+  .seatbar { display:inline-flex; align-items:center; gap:8px; }
+  .seatbar .track { width:54px; height:5px; border-radius:3px; background:var(--line); overflow:hidden; }
+  .seatbar .fill { height:100%; border-radius:3px; background:var(--ok); }
+  .seatbar.warn .fill { background:var(--warn); }
+  .seatbar.over .fill { background:var(--bad); }
+  .card .v.alert { color:var(--bad); }
+  table { width:100%; border-collapse:collapse; background:var(--panel);
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); font-size:13px; }
+  th { color:var(--muted); font:500 11px/1.4 var(--mono); text-transform:uppercase;
+    letter-spacing:.12em; background:var(--panel2); }
+  tr:last-child td { border-bottom:0; }
+  tr.clickable { transition:background-color .15s ease; }
+  tr.clickable:hover { background:var(--panel2); cursor:pointer; }
+  .mono { font-variant-numeric:tabular-nums; }
+  .empty { color:var(--muted); padding:30px; text-align:center; }
+  .err { color:var(--bad); }
+  .hint { color:var(--muted); font-size:12px; margin-top:10px; }
+  .err.hint { color:var(--bad); margin-top:6px; min-height:0; }
+  .btn[disabled] { opacity:.6; cursor:default; }
+  /* entrances + scene transitions (motion only when the user allows it) */
+  @media (prefers-reduced-motion:no-preference) {
+    .rise { animation:riseIn .55s var(--ease) both; animation-delay:calc(var(--i,0)*70ms); }
+    @keyframes riseIn { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+    ::view-transition-old(hubmain) { animation:vtOut .14s ease both; }
+    ::view-transition-new(hubmain) { animation:vtIn .3s var(--ease) both; }
+    @keyframes vtOut { to { opacity:0; } }
+    @keyframes vtIn { from { opacity:0; transform:translateY(10px); } }
+  }
+  /* liquid-glass sign-in (vendored; spec: codesandmore/data/research/liquid_signin_spec.md) */
+  #login{position:fixed;inset:0;z-index:60;display:none}
+  #login.show{display:block}
+  .lq-scene{position:relative;min-height:100vh;width:100%;overflow:hidden;background:#000;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  .lq-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .lq-center{position:relative;z-index:10;display:flex;min-height:100vh;width:100%;
+    align-items:center;justify-content:center;padding:32px 16px}
+  .lq-card{position:relative;width:100%;max-width:32rem;overflow:hidden;border-radius:16px;
+    padding:24px;box-shadow:0 25px 50px -12px rgba(0,0,0,.55)}
+  .lq-card.lq-fallback{background:rgba(255,255,255,.08);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+  .lq-canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;z-index:0}
+  .lq-content{position:relative;z-index:1}
+  .lq-brand{text-align:center;margin-bottom:24px}
+  .lq-logo{display:block;margin:0 auto}
+  .lq-wordmark{margin-top:10px;font-size:13px;font-weight:600;letter-spacing:.18em;
+    text-transform:uppercase;color:rgba(255,255,255,.7)}
+  .lq-heading{margin:0 0 8px;text-align:center;font-size:30px;font-weight:500;letter-spacing:-.025em;
+    background:linear-gradient(90deg,#fff,#d8b4fe);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lq-sub{margin:0 0 24px;text-align:center;font-size:12px;line-height:1.625;color:rgba(255,255,255,.6)}
+  .lq-field{margin-bottom:16px}
+  .lq-label{display:block;margin-bottom:6px;font-size:14px;font-weight:500;color:rgba(255,255,255,.7);text-align:left}
+  .lq-input{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);
+    padding:14px 16px;font-size:14px;color:#fff;outline:none;font-family:inherit;
+    transition:border-color .2s ease,background-color .2s ease}
+  .lq-input::placeholder{color:rgba(255,255,255,.3)}
+  .lq-input:focus{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.1)}
+  .lq-input option{background:#15171c;color:#fff}
+  .lq-pw{position:relative}
+  .lq-pw .lq-input{padding-right:48px}
+  .lq-eye{position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;
+    background:none;border:0;padding:0;cursor:pointer;color:rgba(255,255,255,.4);transition:color .2s ease}
+  .lq-eye:hover{color:rgba(255,255,255,.7)}
+  .lq-row{display:flex;align-items:center;justify-content:space-between;margin:4px 0 20px}
+  .lq-reset{padding:0;margin:0;background:none;border:0;font-family:inherit;font-size:14px;font-weight:400;
+    color:rgba(255,255,255,.7);cursor:pointer;transition:color .15s ease}
+  .lq-reset:hover{color:#fff}
+  .lq-ok{margin-top:12px;min-height:20px;font-size:14px;color:#86efac;text-align:center}
+  .lq-check{display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,.7);cursor:pointer;
+    user-select:none;-webkit-user-select:none;position:relative}
+  .lq-check input{position:absolute;opacity:0;pointer-events:none}
+  .lq-box{width:20px;height:20px;flex:none;border-radius:4px;border:1px solid rgba(255,255,255,.2);
+    background:rgba(255,255,255,.05);display:inline-flex;align-items:center;justify-content:center;
+    transition:background-color .15s ease,border-color .15s ease}
+  .lq-box svg{opacity:0}
+  .lq-check input:checked+.lq-box{border-color:#c084fc;background:#a855f7}
+  .lq-check input:checked+.lq-box svg{opacity:1}
+  .lq-submit{width:100%;border:0;border-radius:9999px;background:#fff;padding:14px;font-size:16px;
+    font-weight:600;color:#111827;cursor:pointer;font-family:inherit;
+    transition:background-color .15s ease,transform .1s ease}
+  .lq-submit:hover{background:rgba(255,255,255,.9)}
+  .lq-submit:active{transform:scale(.98)}
+  .lq-err{margin-top:12px;min-height:20px;font-size:14px;color:#fca5a5;text-align:center}
+  .lq-join{margin:24px 0 0;text-align:center;font-size:14px;color:rgba(255,255,255,.5)}
+  .lq-join a,.lq-joinlink{font-weight:500;color:#fff;cursor:pointer;text-decoration:none;transition:color .15s ease}
+  .lq-join a:hover,.lq-joinlink:hover{color:#d8b4fe}
+  button.lq-joinlink{background:none;border:0;padding:0;margin:0;font:inherit;font-weight:500}
+  .lq-fade{opacity:0;transform:translateY(20px)}
+  #login.show .lq-fade{animation:lqFadeUp .7s cubic-bezier(0.16,1,0.3,1) both;animation-delay:var(--lqd,0ms)}
+  @keyframes lqFadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    .lq-fade{opacity:1;transform:none}
+    #login.show .lq-fade{animation:none}
+  }
+  @media (min-width:640px){
+    .lq-card{padding:40px}
+    .lq-heading{font-size:36px}
+    .lq-sub{font-size:14px;margin-bottom:32px}
+  }
+  @media (min-width:768px){
+    .lq-card{padding:56px}
+    .lq-heading{font-size:48px}
+    .lq-sub{font-size:16px}
+  }
+  /* competitor pricing tab */
+  .comp-controls { margin: 0 0 14px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 5; background: rgba(12,16,28,.92); backdrop-filter: blur(8px);
+    border-radius: 10px; border: 1px solid rgba(255,255,255,.08); }
+  .comp-controls input[type=range] { flex: 1; max-width: 360px; accent-color: #6f97ff; }
+  /* hero total banner */
+  .comp-hero { border: 1px solid rgba(255,255,255,.10); border-radius: 14px; padding: 18px 20px; margin: 4px 0 22px;
+    background: linear-gradient(180deg, rgba(80,140,255,.07), rgba(80,140,255,.02)); }
+  .comp-hero-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; }
+  .comp-hero-card { padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); }
+  .comp-hero-card.is-suite { background: rgba(80,140,255,.10); border-color: rgba(80,140,255,.28); }
+  .comp-hero-vs { font-size: 13px; opacity: .5; text-transform: uppercase; letter-spacing: .08em; }
+  .comp-hero-label { font-size: 12px; opacity: .7; margin-bottom: 6px; }
+  .comp-hero-num { font-size: 30px; font-weight: 700; line-height: 1; }
+  .comp-hero-num span { font-size: 14px; font-weight: 500; opacity: .6; margin-left: 3px; }
+  .comp-hero-pills { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .comp-pill { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.06); white-space: nowrap; }
+  .comp-verdict { margin: 16px 0 4px; font-size: 15px; padding: 10px 14px; border-radius: 10px; }
+  .comp-verdict.good { background: rgba(60,200,120,.12); color: #8fe9b3; }
+  .comp-verdict.bad  { background: rgba(240,140,90,.12); color: #f7b690; }
+  .comp-bars { display: grid; gap: 8px; margin: 10px 0 6px; }
+  .comp-bar-row { display: grid; grid-template-columns: 86px 1fr 92px; align-items: center; gap: 10px; }
+  .comp-bar-lab { font-size: 12px; opacity: .7; }
+  .comp-bar-track { height: 14px; background: rgba(255,255,255,.06); border-radius: 7px; overflow: hidden; }
+  .comp-bar { height: 100%; border-radius: 7px; transition: width .25s ease; }
+  .comp-bar.fill-stack { background: linear-gradient(90deg,#c98a6a,#e0a987); }
+  .comp-bar.fill-suite { background: linear-gradient(90deg,#5a8bff,#7fa8ff); }
+  .comp-bar-val { font-size: 12px; text-align: right; opacity: .85; }
+  .comp-hero-foot { margin-top: 10px; }
+  /* what-they-have calculator */
+  .comp-calc-head { margin-bottom: 10px; }
+  .comp-calc-head h3 { margin: 0 0 2px; }
+  .comp-muted { opacity: .55; }
+  .calc-table { width: 100%; border-collapse: collapse; margin: 4px 0 16px; }
+  .calc-table th { text-align: left; padding: 6px 10px; font-size: 11px; opacity: .55; text-transform: uppercase; letter-spacing: .05em; }
+  .calc-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 13px; }
+  .calc-cat td { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; opacity: .5; padding-top: 13px; border-bottom: none; }
+  .calc-own { background: rgba(80,140,255,.06); }
+  .calc-dim { opacity: .42; }
+  .calc-chk { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+  .calc-chk input { accent-color: #6f97ff; }
+  .calc-cost { font-variant-numeric: tabular-nums; }
+  .calc-table select { background: rgba(255,255,255,.06); color: inherit; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 7px; padding: 4px 8px; font-size: 12px; max-width: 240px; }
+  .totals2 { margin-top: 6px; }
+  /* proposal control bar */
+  .comp-propbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; }
+  .comp-propbar input[type=text] { flex: 1; min-width: 200px; max-width: 320px; background: rgba(255,255,255,.05);
+    color: inherit; border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 7px 10px; font-size: 13px; }
+  .comp-prop-lab { font-size: 12px; opacity: .7; display: inline-flex; align-items: center; gap: 6px; }
+  .comp-prop-lab input[type=date] { background: rgba(255,255,255,.05); color: inherit;
+    border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+  .comp-btn { background: #3b6fd4; color: #fff; border: 0; border-radius: 8px; padding: 8px 16px;
+    font-size: 13px; font-weight: 600; cursor: pointer; }
+  .comp-btn:hover { background: #4f80e0; }
+  @media (max-width: 640px) { .comp-hero-grid { grid-template-columns: 1fr; } .comp-hero-vs { display: none; }
+    .calc-table select { max-width: 150px; } }
+  .comp-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; }
+  .comp-table th, .comp-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; }
+  .comp-own { background: rgba(80,140,255,.08); }
+  .badge { font-size: 11px; padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
+  .badge-green { background: rgba(60,200,120,.18); color: #6f6; }
+  .badge-amber { background: rgba(240,180,60,.18); color: #fc6; }
+  .badge-grey  { background: rgba(160,160,160,.18); color: #bbb; }
+  .badge-blue  { background: rgba(80,140,255,.20); color: #9bf; }
+  /* powered-by badge */
+  .tsq-powered{display:inline-flex;align-items:center;gap:6px;font-size:12px;opacity:.65;color:inherit;text-decoration:none;transition:opacity .2s}
+  .tsq-powered:hover{opacity:1}
+  .tsq-powered strong{font-weight:600}
+  .appfoot{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:0 24px 40px;text-align:center;color:var(--muted)}
+  .lq-powered{position:absolute;left:0;right:0;bottom:24px;z-index:10;text-align:center;color:rgba(255,255,255,.85)}
+  .comp-rec { padding: 8px 10px; border-left: 3px solid #9bf; margin: 6px 0; background: rgba(80,140,255,.06); }
+  .comp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .comp-card { border: 1px solid rgba(255,255,255,.10); border-radius: 10px; padding: 12px; }
+  .comp-card-h { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .comp-card-sec { margin-top: 8px; }
+  .comp-card-sec ul { margin: 4px 0 0; padding-left: 18px; }
+</style>
+</head>
+<body>
+<div id="grain" aria-hidden="true"></div>
+<header>
+  <span class="brand">12<sup>2</sup> AI</span>
+  <nav>
+    <button data-tab="launcher" class="active">Launcher</button>
+    <button data-tab="jobs">Jobs</button>
+    <button data-tab="admin" data-admin hidden>Admin · Metrics</button>
+    <button data-tab="competitors" data-admin hidden>Admin · Competitors</button>
+  </nav>
+  <span class="spacer"></span>
+  <span class="who" id="who"></span>
+  <button class="btn ghost" id="signout">Sign out</button>
+</header>
+
+<main>
+  <!-- LAUNCHER -->
+  <section class="view active" id="view-launcher">
+    <h2>Your products</h2>
+    <p class="sub">Open a product you're entitled to — or add one to your plan in one click.</p>
+    <div class="tiles" id="tiles"><div class="empty">Loading…</div></div>
+  </section>
+
+  <!-- JOBS -->
+  <section class="view" id="view-jobs">
+    <h2>Jobs</h2>
+    <p class="sub">Every address across your organization, with each product's deliverables.</p>
+    <div id="jobs-wrap"><div class="empty">Loading…</div></div>
+    <div id="job-detail"></div>
+  </section>
+
+  <!-- ADMIN -->
+  <section class="view" id="view-admin">
+    <h2>Owner metrics</h2>
+    <p class="sub">Every company across the suite — segmented by plan size, payment health, and seat compliance. MRR is a placeholder until Stripe.</p>
+    <div class="cards" id="suite-cards"></div>
+    <div class="seg-filters" id="seg-filters"></div>
+    <div id="biz-wrap"><div class="empty">Loading…</div></div>
+  </section>
+
+  <!-- COMPETITORS -->
+  <section class="view" id="view-competitors">
+    <h2>Competitor Pricing</h2>
+    <p class="sub">Competitor pricing vs. the full 12² suite. Every figure carries a source + date; owner estimates and quote-only vendors are labelled, never shown as confirmed public prices.</p>
+    <div class="comp-controls">
+      <label for="comp-users">Team size: <strong id="comp-users-val">10</strong> users</label>
+      <input type="range" id="comp-users" min="1" max="100" value="10" step="1">
+    </div>
+    <div class="comp-propbar">
+      <input id="comp-prospect" type="text" placeholder="Prepared for (company name)" maxlength="80">
+      <label class="comp-prop-lab">Valid until <input id="comp-valid" type="date"></label>
+      <button id="comp-proposal" class="comp-btn" type="button">Generate Proposal (PDF)</button>
+    </div>
+    <div id="comp-banner" class="sub"></div>
+    <div id="comp-wrap"><div class="empty">Loading…</div></div>
+  </section>
+</main>
+
+<footer class="appfoot">
+  <a href="https://12squared.ai" target="_blank" rel="noreferrer" class="tsq-powered" aria-label="Powered by 12² AI"><svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M 128 192 L 128 256 L 64.5 256 L 32 223 L 0 192 L 0 128 L 64 128 Z M 256 192 L 256 256 L 192.5 256 L 160 223 L 128 192 L 128 128 L 192 128 Z M 128 64 L 128 128 L 64.5 128 L 32 95 L 0 64 L 0 0 L 64 0 Z M 256 64 L 256 128 L 192.5 128 L 160 95 L 128 64 L 128 0 L 192 0 Z"/></svg><span>Powered by <strong>12² AI</strong></span></a>
+</footer>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="lq-scene" id="lq-scene">
+    <!-- background video is mounted here by mountLiquidSignin() -->
+    <div class="lq-center">
+      <div class="lq-card" id="lq-card">
+        <canvas class="lq-canvas" id="lq-canvas" aria-hidden="true"></canvas>
+        <div class="lq-content">
+          <div class="lq-brand lq-fade" style="--lqd:0ms">
+            <svg class="lq-logo" width="48" height="48" viewBox="0 0 256 256" fill="#fff" aria-hidden="true" focusable="false"><path d="M 128 192 L 128 256 L 64.5 256 L 32 223 L 0 192 L 0 128 L 64 128 Z M 256 192 L 256 256 L 192.5 256 L 160 223 L 128 192 L 128 128 L 192 128 Z M 128 64 L 128 128 L 64.5 128 L 32 95 L 0 64 L 0 0 L 64 0 Z M 256 64 L 256 128 L 192.5 128 L 160 95 L 128 64 L 128 0 L 192 0 Z"/></svg>
+            <div class="lq-wordmark">12² HUB</div>
+          </div>
+          <h1 class="lq-heading lq-fade" id="login-title" style="--lqd:100ms">Step back in!</h1>
+          <p class="lq-sub lq-fade" style="--lqd:200ms">Sign in to your 12² AI account to launch your products and see every job</p>
+          <form id="loginform">
+            <div class="lq-field lq-fade" style="--lqd:300ms">
+              <label class="lq-label" for="email">Email</label>
+              <input class="lq-input" type="email" id="email" placeholder="Your email address" autocomplete="username" required>
+            </div>
+            <div class="lq-field lq-fade" style="--lqd:400ms">
+              <label class="lq-label" for="password">Password</label>
+              <div class="lq-pw">
+                <input class="lq-input" type="password" id="password" placeholder="Type your password" autocomplete="current-password" required>
+                <button class="lq-eye" type="button" id="lq-eye" aria-label="Show password"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg></button>
+              </div>
+            </div>
+            <select class="lq-input lq-field" id="signup-product" style="display:none">
+              <option value="fieldcam">Start with Fieldcam</option>
+              <option value="hailscan">Start with HailScan</option>
+              <option value="codesandmore">Start with Codes&amp;More</option>
+            </select>
+            <div class="lq-row lq-fade" style="--lqd:500ms">
+              <label class="lq-check"><input type="checkbox" id="lq-stay" checked><span class="lq-box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 13l4 4L19 7"/></svg></span>Stay signed in</label>
+              <button type="button" class="lq-reset">Reset password?</button>
+            </div>
+            <div class="lq-fade" style="--lqd:600ms">
+              <button class="lq-submit" type="submit" id="login-submit">Sign In</button>
+            </div>
+            <div class="lq-err" id="loginerr"></div>
+            <p class="lq-join lq-fade" style="--lqd:700ms"><button type="button" id="toggle-mode" class="lq-joinlink">New to 12² HUB? Create an account →</button></p>
+          </form>
+          <form id="lq-resetform" hidden>
+            <div class="lq-field">
+              <label class="lq-label" for="lq-reset-email">Email</label>
+              <input class="lq-input" type="email" id="lq-reset-email" placeholder="Your email address" autocomplete="username" required>
+            </div>
+            <button class="lq-submit" type="submit" id="lq-reset-send">Send reset link</button>
+            <div class="lq-err" id="lq-reset-err"></div>
+            <p class="lq-ok" id="lq-reset-ok" hidden>If an account exists for that email, a reset link is on its way.</p>
+            <p class="lq-join"><button type="button" class="lq-joinlink" id="lq-reset-back">← Back to sign in</button></p>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="lq-powered"><a href="https://12squared.ai" target="_blank" rel="noreferrer" class="tsq-powered" aria-label="Powered by 12² AI"><svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M 128 192 L 128 256 L 64.5 256 L 32 223 L 0 192 L 0 128 L 64 128 Z M 256 192 L 256 256 L 192.5 256 L 160 223 L 128 192 L 128 128 L 192 128 Z M 128 64 L 128 128 L 64.5 128 L 32 95 L 0 64 L 0 0 L 64 0 Z M 256 64 L 256 128 L 192.5 128 L 160 95 L 128 64 L 128 0 L 192 0 Z"/></svg><span>Powered by <strong>12² AI</strong></span></a></div>
+  </div>
+</div>
+
+<script src="/competitors.js"></script>
+<script>
+const CONFIG = __HUB_CONFIG__;
+
+/* ---- Auth (Supabase GoTrue, email+password) ------------------------------ */
+const Auth = (() => {
+  const KEY = 'twelvesq.session';
+  const base = (CONFIG.supabaseUrl || '').replace(/\/$/, '');
+  const ANON = CONFIG.supabaseAnonKey || '';
+  function save(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
+  function session() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (_) { return null; } }
+  function clearSession() { localStorage.removeItem(KEY); }
+  function store(j) {
+    if (!j || !j.access_token) return null;
+    const s = { access_token: j.access_token, refresh_token: j.refresh_token,
+      expires_at: Date.now() + ((j.expires_in || 3600) * 1000) };
+    save(s); return s;
+  }
+  async function signIn(email, password) {
+    const r = await fetch(`${base}/auth/v1/token?grant_type=password`, {
+      method:'POST', headers:{ apikey:ANON, 'Content-Type':'application/json' },
+      body: JSON.stringify({ email, password }) });
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || !j.access_token) throw new Error((j && (j.error_description || j.msg || j.error)) || 'Sign-in failed');
+    return store(j);
+  }
+  async function refresh() {
+    const s = session(); if (!s || !s.refresh_token) return null;
+    const r = await fetch(`${base}/auth/v1/token?grant_type=refresh_token`, {
+      method:'POST', headers:{ apikey:ANON, 'Content-Type':'application/json' },
+      body: JSON.stringify({ refresh_token: s.refresh_token }) });
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || !j.access_token) return null;
+    return store(j);
+  }
+  async function freshToken() {
+    let s = session(); if (!s) return null;
+    if (Date.now() > s.expires_at - 60000) { s = await refresh() || s; }
+    return s && s.access_token ? s.access_token : null;
+  }
+  function emailFromToken(t) {
+    try { return JSON.parse(atob(t.split('.')[1])).email || ''; } catch (_) { return ''; }
+  }
+  return { signIn, refresh, freshToken, session, clearSession, emailFromToken };
+})();
+
+async function authedFetch(url, opts) {
+  opts = opts || {};
+  let isApi = false;
+  try { const u = new URL(url, location.href); isApi = (u.origin === location.origin) && u.pathname.startsWith('/api/'); } catch (_) {}
+  if (!isApi) return fetch(url, opts);
+  async function withToken() {
+    const token = await Auth.freshToken();
+    const headers = new Headers(opts.headers || {});
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    return fetch(url, { ...opts, headers });
+  }
+  let resp = await withToken();
+  if (resp.status === 401) {
+    if (await Auth.refresh()) resp = await withToken();
+    if (resp.status === 401) { Auth.clearSession(); showLogin(); const e = new Error('auth required'); e.status = 401; throw e; }
+  }
+  return resp;
+}
+
+/* ---- Entitlements -------------------------------------------------------- */
+const Entitlements = (() => {
+  let _s = null;
+  async function load() {
+    try {
+      const r = await authedFetch('/api/me'); if (!r.ok) { _s = null; return null; }
+      const j = await r.json();
+      _s = { user:j.user||null, orgs:j.orgs||[], products:new Set(j.products||[]), isPlatformAdmin:!!j.is_platform_admin };
+      return _s;
+    } catch (_) { _s = null; return null; }
+  }
+  const has = p => !!_s && _s.products.has(p);
+  const isAdmin = () => !!_s && _s.isPlatformAdmin;
+  /* org owners/admins (and platform admins) may self-serve add products */
+  const canSelfAdd = () => !!_s && (_s.isPlatformAdmin ||
+    (_s.orgs || []).some(o => o.role === 'owner' || o.role === 'admin'));
+  function gateUI() {
+    document.querySelectorAll('[data-product]').forEach(el => el.hidden = !has(el.getAttribute('data-product')));
+    document.querySelectorAll('[data-admin]').forEach(el => el.hidden = !isAdmin());
+  }
+  return { load, has, isAdmin, canSelfAdd, gateUI, get state(){ return _s; } };
+})();
+
+/* ---- UI helpers ---------------------------------------------------------- */
+const $ = s => document.querySelector(s);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money = c => '$' + ((c||0)/100).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+function showLogin(){ $('#login').classList.add('show'); mountLiquidSignin(); }
+function hideLogin(){ $('#login').classList.remove('show'); teardownLiquidSignin(); }
+
+function setTab(name) {
+  const apply = () => {
+    document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab===name));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id===`view-${name}`));
+  };
+  const already = document.querySelector(`nav button.active[data-tab="${name}"]`);
+  if (!already && document.startViewTransition
+      && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.startViewTransition(apply);
+  } else {
+    apply();
+  }
+  if (name==='jobs') loadJobs();
+  if (name==='admin') loadAdmin();
+  if (name==='competitors') loadCompetitors();
+}
+
+/* ---- Launcher ------------------------------------------------------------ */
+const PRODUCT_BASE = {};   // product -> entitled launch URL (for deliverable links)
+async function loadLauncher() {
+  try {
+    const r = await authedFetch('/api/launcher'); const j = await r.json();
+    (j.products||[]).forEach(p => { if (p.entitled && p.url) PRODUCT_BASE[p.product] = p.url; });
+    const tiles = (j.products||[]).map((p, i) => `
+      <div class="tile rise" style="--i:${i}">
+        <h3>${esc(p.label)}</h3>
+        <div class="state">${p.entitled ? '<span class="pill ok">Entitled</span>'
+          : p.trial_expired ? '<span class="pill">Trial ended</span>'
+          : '<span class="pill">Not in plan</span>'}</div>
+        ${p.entitled
+          ? `<a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">Open ${esc(p.label)}</a>`
+          : p.trial_expired && p.url
+            ? `<a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">Subscribe in ${esc(p.label)}</a>
+               <div class="hint">Your trial ended — pick a plan inside ${esc(p.label)} to keep your data.</div>`
+          : Entitlements.canSelfAdd()
+            ? `<button class="btn" data-add="${esc(p.product)}">Add to your plan</button>
+               <div class="hint">Starts a ${esc(p.label)} trial on your existing plan.</div>
+               <div class="err hint" data-add-err="${esc(p.product)}"></div>`
+            : `<div class="hint">Ask your organization's administrator to add ${esc(p.label)} to your plan.</div>`}
+      </div>`).join('');
+    $('#tiles').innerHTML = tiles || '<div class="empty">No products.</div>';
+    document.querySelectorAll('#tiles [data-add]').forEach(btn => btn.onclick = async () => {
+      const errEl = document.querySelector(`#tiles [data-add-err="${btn.dataset.add}"]`);
+      btn.disabled = true; btn.textContent = 'Adding…'; if (errEl) errEl.textContent = '';
+      try {
+        const r = await authedFetch('/api/products/add', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ product: btn.dataset.add }) });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.message || j.error || 'could not add product');
+        await Entitlements.load(); Entitlements.gateUI(); await loadLauncher();
+      } catch (e) {
+        btn.disabled = false; btn.textContent = 'Add to your plan';
+        if (errEl) errEl.textContent = e.message;
+      }
+    });
+  } catch (e) { $('#tiles').innerHTML = `<div class="empty err">${esc(e.message)}</div>`; }
+}
+
+/* ---- Jobs ---------------------------------------------------------------- */
+async function loadJobs() {
+  $('#job-detail').innerHTML = '';
+  try {
+    const r = await authedFetch('/api/jobs'); const j = await r.json();
+    const jobs = j.jobs || [];
+    if (!jobs.length) { $('#jobs-wrap').innerHTML = '<div class="empty">No jobs yet.</div>'; return; }
+    $('#jobs-wrap').innerHTML = `<table class="rise"><thead><tr>
+      <th>Address</th><th>City</th><th>State</th><th>Deliverables</th><th>Fieldcam projects</th></tr></thead>
+      <tbody>${jobs.map(j => `<tr class="clickable" data-id="${esc(j.id)}">
+        <td>${esc(j.address)||'—'}</td><td>${esc(j.city)||''}</td><td>${esc(j.state)||''}</td>
+        <td class="mono">${j.deliverable_count||0}</td><td class="mono">${(j.field_projects||[]).length}</td>
+      </tr>`).join('')}</tbody></table>`;
+    document.querySelectorAll('#jobs-wrap tr.clickable').forEach(tr =>
+      tr.onclick = () => loadJobDetail(tr.dataset.id));
+  } catch (e) { $('#jobs-wrap').innerHTML = `<div class="empty err">${esc(e.message)}</div>`; }
+}
+const PRODUCT_LABELS = { fieldcam:'Fieldcam', hailscan:'HailScan', codesandmore:'Codes&More' };
+function productOf(d) {
+  if (d.product) return d.product;
+  if (d.kind === 'code_report') return 'codesandmore';
+  if (d.field_project_id || d.kind === 'pdf_report') return 'fieldcam';
+  return 'hailscan';
+}
+function deliverableLink(d) {
+  if (!d.file_url || d.status !== 'ready' && d.status !== 'delivered') return '';
+  let href = d.file_url;
+  if (href.startsWith('/')) {   // product-relative: prefix the product's own origin
+    const base = PRODUCT_BASE[productOf(d)];
+    if (!base) return '';
+    href = base.replace(/\/app\/?$/, '') + href;
+  }
+  return ` — <a href="${esc(href)}" target="_blank" rel="noopener">open</a>`;
+}
+async function loadJobDetail(id) {
+  try {
+    const r = await authedFetch('/api/jobs/' + encodeURIComponent(id)); const j = await r.json();
+    if (!r.ok) { $('#job-detail').innerHTML = `<div class="empty err">${esc(j.error||'error')}</div>`; return; }
+    const byProduct = {};
+    (j.deliverables||[]).forEach(d => (byProduct[productOf(d)] = byProduct[productOf(d)] || []).push(d));
+    const dl = Object.keys(PRODUCT_LABELS).filter(p => byProduct[p]).map(p => `
+      <div style="margin-bottom:8px"><span class="pill">${PRODUCT_LABELS[p]}</span>
+      <ul style="margin:6px 0 0">${byProduct[p].map(d =>
+        `<li>${esc(d.label||d.kind)} — <span class="pill">${esc(d.status)}</span>${deliverableLink(d)}</li>`).join('')}
+      </ul></div>`).join('') || '<div class="empty" style="padding:8px 0">none</div>';
+    const fp = (j.field_projects||[]).map(p => `<li>${esc(p.name)} (${esc(p.status)})</li>`).join('') || '<li class="empty">none</li>';
+    const hits = (j.hits||[]).map(h => `<li>${esc(h.event_date)} — ${h.max_size_in?esc(h.max_size_in)+'"':''} <span class="pill">${esc(h.status)}</span></li>`).join('') || '<li class="empty">none</li>';
+    $('#job-detail').innerHTML = `<div class="card rise" style="margin-top:18px">
+      <h3>${esc(j.address)||'Job'}</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-top:10px">
+        <div><div style="color:var(--muted)">Deliverables</div>${dl}</div>
+        <div><div style="color:var(--muted)">Fieldcam projects</div><ul>${fp}</ul></div>
+        <div><div style="color:var(--muted)">HailScan hits</div><ul>${hits}</ul></div>
+      </div></div>`;
+  } catch (e) { $('#job-detail').innerHTML = `<div class="empty err">${esc(e.message)}</div>`; }
+}
+
+/* ---- Admin metrics ------------------------------------------------------- */
+let ADMIN_DATA = null;
+let adminFilter = 'all';
+const PAY_PILL = {
+  healthy:['ok','active'], trialing:['accent','trial'],
+  failed:['bad','payment failed'], canceled:['','canceled'],
+  other:['warn','review'], none:['','no plan'],
+};
+const PRODUCT_LABEL = { fieldcam:'Fieldcam', hailscan:'HailScan', codesandmore:'Codes&More' };
+
+function seatCell(o) {
+  if (!o.seats) return `<span class="mono">${o.members} <span style="color:var(--muted)">/ ∞</span></span>`;
+  const pct = Math.min(100, Math.round((o.members / o.seats) * 100));
+  const cls = o.seat_status === 'over' ? 'over' : (o.seat_status === 'at_limit' ? 'warn' : '');
+  const over = o.seat_status === 'over' ? ` <span class="pill bad">+${o.seats_over_by} over</span>` : '';
+  return `<span class="seatbar ${cls}"><span class="track"><span class="fill" style="width:${pct}%"></span></span>
+    <span class="mono">${o.members} / ${o.seats}</span></span>${over}`;
+}
+
+async function loadAdmin() {
+  try {
+    const r = await authedFetch('/api/admin/metrics');
+    if (r.status === 403) { $('#biz-wrap').innerHTML = '<div class="empty">Platform-admin access required.</div>'; $('#suite-cards').innerHTML=''; $('#seg-filters').innerHTML=''; return; }
+    const j = await r.json();
+    if (!r.ok) { $('#biz-wrap').innerHTML = `<div class="empty err">${esc(j.error||'error')}</div>`; return; }
+    ADMIN_DATA = j;
+    renderAdmin();
+  } catch (e) { $('#biz-wrap').innerHTML = `<div class="empty err">${esc(e.message)}</div>`; }
+}
+
+function renderAdmin() {
+  const j = ADMIN_DATA; if (!j) return;
+  const s = j.suite || {}, ac = s.by_app_count || {};
+  // --- suite cards ---
+  const cards = [
+    ['Companies', s.paying_companies ?? s.companies ?? 0, false],
+    ['1 app', ac[1] || 0, false],
+    ['2 apps', ac[2] || 0, false],
+    ['Full suite', s.full_suite || 0, false],
+    ['Failed payments', s.failed_payments || 0, (s.failed_payments || 0) > 0],
+    ['Over seats', s.over_seat || 0, (s.over_seat || 0) > 0],
+    ['Users / seats', `${s.members||0} / ${s.seats||0}`, false],
+    ['MRR', money(s.mrr_cents), false],
+  ];
+  $('#suite-cards').innerHTML = cards.map(([k,v,alert], i) =>
+    `<div class="card rise" style="--i:${i}"><div class="k">${k}</div><div class="v mono${alert?' alert':''}">${v}</div></div>`).join('');
+
+  // --- segmentation filter chips ---
+  const filters = [
+    ['all', 'All', s.paying_companies ?? s.companies ?? 0, false],
+    ['1', '1 app', ac[1] || 0, false],
+    ['2', '2 apps', ac[2] || 0, false],
+    ['3', 'Full suite', ac[3] || 0, false],
+    ['failed', 'Failed payments', s.failed_payments || 0, true],
+    ['over', 'Over seats', s.over_seat || 0, true],
+  ];
+  $('#seg-filters').innerHTML = filters.map(([key,label,count,alert]) =>
+    `<button class="seg-chip${alert?' alert':''}${adminFilter===key?' on':''}" data-filter="${key}">${label}<b>${count}</b></button>`).join('');
+  $('#seg-filters').querySelectorAll('.seg-chip').forEach(c =>
+    c.onclick = () => { adminFilter = c.dataset.filter; renderAdmin(); });
+
+  // --- filter + sort the company rows ---
+  let orgs = (j.orgs || []).filter(o => o.app_count > 0);
+  if (adminFilter === '1') orgs = orgs.filter(o => o.app_count === 1);
+  else if (adminFilter === '2') orgs = orgs.filter(o => o.app_count === 2);
+  else if (adminFilter === '3') orgs = orgs.filter(o => o.app_count >= 3);
+  else if (adminFilter === 'failed') orgs = orgs.filter(o => o.payment_health === 'failed');
+  else if (adminFilter === 'over') orgs = orgs.filter(o => o.seat_status === 'over');
+  // at-risk first, then by MRR
+  orgs.sort((a,b) => (b.payment_health==='failed') - (a.payment_health==='failed')
+    || (b.seat_status==='over') - (a.seat_status==='over') || b.mrr_cents - a.mrr_cents);
+
+  const rows = orgs.map(o => {
+    const [pcls, plabel] = PAY_PILL[o.payment_health] || ['','—'];
+    const prods = (o.products||[]).map(p => `<span class="pill">${esc(PRODUCT_LABEL[p]||p)}</span>`).join(' ') || '—';
+    const band = o.is_full_suite
+      ? '<span class="pill accent">Full suite</span>'
+      : `<span class="pill">${esc(o.plan_band)}</span>`;
+    return `<tr>
+      <td>${esc(o.org_name)||'—'}</td>
+      <td>${band}</td>
+      <td style="white-space:normal">${prods}</td>
+      <td>${seatCell(o)}</td>
+      <td><span class="pill ${pcls}">${plabel}</span></td>
+      <td class="mono">${o.jobs}</td>
+      <td class="mono">${o.deliverables_total}</td>
+      <td class="mono">${money(o.mrr_cents)}</td></tr>`;
+  }).join('');
+
+  $('#biz-wrap').innerHTML = rows ? `<table class="rise"><thead><tr>
+    <th>Company</th><th>Plan</th><th>Products</th><th>Users / seats</th>
+    <th>Payment</th><th>Jobs</th><th>Deliv.</th><th>MRR</th></tr></thead>
+    <tbody>${rows}</tbody></table>` : '<div class="empty">No companies match this filter.</div>';
+}
+
+/* ---- Competitor pricing -------------------------------------------------- */
+let _compDoc = null;
+let _compSel = {};        // vendorId -> { included, tierName } — the "what they have" basket
+let _compWired = false;   // delegated change-listener attached once
+const COMP_TODAY = new Date().toISOString().slice(0,10);
+const CATS = [['photo_docs','Photo Documentation'],['hail_data','Hail / Storm Data'],['code_reports','Code Reports']];
+
+async function loadCompetitors() {
+  const wrap = document.querySelector('#comp-wrap');
+  try {
+    const r = await authedFetch('/api/admin/competitors');
+    if (!r.ok) throw new Error((await r.json()).error || ('HTTP '+r.status));
+    _compDoc = await r.json();
+  } catch (e) {
+    wrap.innerHTML = `<div class="empty err">${esc(e.message)}</div>`;
+    return;
+  }
+  const slider = document.querySelector('#comp-users');
+  initCompSel(+slider.value);
+  slider.oninput = () => {
+    document.querySelector('#comp-users-val').textContent = slider.value;
+    renderCompetitors(+slider.value);
+  };
+  if (!_compWired) {
+    wrap.addEventListener('change', onCompSelChange);
+    document.querySelector('#comp-proposal').onclick = openProposal;
+    _compWired = true;
+  }
+  const vi = document.querySelector('#comp-valid');
+  if (vi && !vi.value) { const d = new Date(); d.setDate(d.getDate() + 30); vi.value = d.toISOString().slice(0, 10); }
+  renderCompetitors(+slider.value);
+}
+
+// Seed the basket once: the cheapest competitor per category is "had" by
+// default (mirrors the auto stack); 12² products default to their entry tier.
+function initCompSel(n) {
+  if (Object.keys(_compSel).length) return;
+  const auto = Competitors.stackTotals(_compDoc, n);
+  const had = new Set(auto.stack.items.map(i => i.id));
+  for (const v of _compDoc.competitors) {
+    const c = Competitors.costAtUsers(v, n);
+    const fallback = (v.tiers.find(t => !t.quoteOnly) || v.tiers[0]).name;
+    _compSel[v.id] = { included: had.has(v.id), tierName: c.tierName || fallback };
+  }
+  for (const v of _compDoc.twelveSquared) {
+    const c = Competitors.costAtUsers(v, n);
+    _compSel[v.id] = { included: true, tierName: c.tierName || v.tiers[0].name };
+  }
+}
+
+function onCompSelChange(e) {
+  const inc = e.target.getAttribute('data-sel-inc');
+  const tier = e.target.getAttribute('data-sel-tier');
+  if (inc) { (_compSel[inc] = _compSel[inc] || {}).included = e.target.checked; }
+  if (tier) { (_compSel[tier] = _compSel[tier] || {}).tierName = e.target.value; }
+  if (inc || tier) renderCompetitors(+document.querySelector('#comp-users').value);
+}
+
+function compBadge(tier) {
+  const warnDays = _compDoc.stalenessWarnDays || 60;
+  if (tier.confidence === 'quote') return tier.quoteOnly
+    ? '<span class="badge badge-grey">quote only</span>'
+    : '<span class="badge badge-amber">owner estimate</span>';
+  if (tier.confidence === 'archive') return `<span class="badge badge-amber">from archive ${esc(tier.lastVerified)}</span>`;
+  if (tier.confidence === 'internal') return '<span class="badge badge-grey">internal</span>';
+  const age = Competitors.daysSince(tier.lastVerified, COMP_TODAY);
+  if (age > warnDays) return `<span class="badge badge-amber">verify (${age}d old)</span>`;
+  return `<span class="badge badge-green">verified ${esc(tier.lastVerified)}</span>`;
+}
+
+function vendorById(id) {
+  return (_compDoc.twelveSquared.concat(_compDoc.competitors)).find(v => v.id === id);
+}
+
+function renderCompetitors(n) {
+  const oldest = _compDoc.competitors.flatMap(v => v.tiers)
+    .filter(t => t.confidence !== 'quote' && t.lastVerified)
+    .map(t => t.lastVerified).sort()[0] || '—';
+  document.querySelector('#comp-banner').innerHTML =
+    `Oldest verified date: <strong>${esc(oldest)}</strong> · re-verify quote-only & archive sources in a browser before relying.`;
+
+  let html = renderCalculator(n);
+  for (const [cat, label] of CATS) {
+    const own = _compDoc.twelveSquared.filter(v => v.category === cat);
+    const rivals = _compDoc.competitors.filter(v => v.category === cat);
+    if (!own.length && !rivals.length) continue;
+    html += `<h3>${esc(label)}</h3><table class="comp-table"><thead><tr>
+      <th>Product</th><th>Native pricing</th><th>Cost @ ${n} users</th><th>Seat model</th><th>Verified</th><th>Source</th>
+    </tr></thead><tbody>`;
+    for (const v of own.concat(rivals)) {
+      const c = Competitors.costAtUsers(v, n);
+      const t0 = v.tiers.find(t => t.name === c.tierName) || v.tiers[0];
+      const native = v.tiers.map(t => t.quoteOnly ? `${esc(t.name)}: Contact sales`
+        : `${esc(t.name)}: ${Competitors.fmtMoney(t.monthlyCents !== null ? t.monthlyCents : t.annualTotalCents)}${t.monthlyCents !== null ? '/mo' : '/yr'}`).join('<br>');
+      const isOwn = v.seatModel === 'OWN';
+      html += `<tr class="${isOwn ? 'comp-own' : ''}">
+        <td><strong>${esc(v.name)}</strong>${isOwn ? ' <span class="badge badge-blue">12²</span>' : ''}</td>
+        <td>${native}</td>
+        <td title="${esc(c.seatMath)}">${Competitors.fmtMoney(c.monthlyCents)}${c.monthlyCents !== null ? '/mo' : ''}</td>
+        <td>${esc(v.seatModel)}</td>
+        <td>${compBadge(t0)}</td>
+        <td>${t0.sourceUrl.startsWith('http') ? `<a href="${esc(t0.sourceUrl)}" target="_blank" rel="noopener">link</a>` : esc(t0.sourceUrl)}</td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  document.querySelector('#comp-wrap').innerHTML = html;
+  document.querySelector('#comp-wrap').insertAdjacentHTML('beforeend', renderRecommendations(n));
+  document.querySelector('#comp-wrap').insertAdjacentHTML('beforeend', renderBattlecards(n));
+}
+
+function renderRecommendations(n) {
+  let cards = '';
+  for (const own of _compDoc.twelveSquared) {
+    const ownCost = Competitors.costAtUsers(own, n);
+    if (ownCost.monthlyCents === null) continue;
+    for (const rivalId of own.competesWith) {
+      const rival = vendorById(rivalId);
+      if (!rival) continue;
+      const rc = Competitors.costAtUsers(rival, n);
+      let verdict;
+      if (rc.monthlyCents === null) {
+        verdict = `${esc(rival.name)} is quote-only — lead with 12²'s transparent ${Competitors.fmtMoney(ownCost.monthlyCents)}/mo.`;
+      } else {
+        const delta = rc.monthlyCents - ownCost.monthlyCents;
+        verdict = delta > 0
+          ? `12² is ${Competitors.fmtMoney(delta)}/mo cheaper than ${esc(rival.name)} at ${n} users.`
+          : delta < 0
+          ? `12² is ${Competitors.fmtMoney(-delta)}/mo more than ${esc(rival.name)} at ${n} users — justify with bundled scope.`
+          : `12² matches ${esc(rival.name)} at ${n} users — win on bundled scope.`;
+      }
+      cards += `<div class="comp-rec"><strong>${esc(own.name)}</strong> vs ${esc(rival.name)}: ${verdict}</div>`;
+    }
+  }
+  return `<h3>Recommendations @ ${n} users</h3>${cards || '<p class="sub">No priced comparison available.</p>'}`;
+}
+
+function renderBattlecards(n) {
+  let cards = '';
+  for (const v of _compDoc.competitors) {
+    const c = Competitors.costAtUsers(v, n);
+    const price = c.monthlyCents !== null ? `${Competitors.fmtMoney(c.monthlyCents)}/mo @ ${n}` : 'Contact sales';
+    const gaps = (v.gaps || []).map(g => `<li>${esc(g)}</li>`).join('');
+    const wins = (v.whyWeWin || []).map(w => `<li>${esc(w)}</li>`).join('');
+    cards += `<div class="comp-card">
+      <div class="comp-card-h"><strong>${esc(v.name)}</strong><span>${price}</span></div>
+      <div class="sub">${esc(v.seatModel)} · ${esc(v.notes || '')}</div>
+      ${gaps ? `<div class="comp-card-sec"><em>Gaps</em><ul>${gaps}</ul></div>` : ''}
+      ${wins ? `<div class="comp-card-sec"><em>Why 12² wins</em><ul>${wins}</ul></div>` : ''}
+    </div>`;
+  }
+  return `<h3>Battlecards</h3><div class="comp-cards">${cards}</div>`;
+}
+
+function renderCalculator(n) {
+  const b = Competitors.basketTotals(_compDoc, n, _compSel);
+  const max = Math.max(b.theirTotal, b.suiteTotal, 1);
+  const cheaper = b.savingsCents > 0;
+
+  const tierOpts = (v, selName) => v.tiers.map(t => {
+    const c = Competitors.costForTier(v, t, n);
+    const price = t.quoteOnly ? 'quote' : (c.monthlyCents !== null ? Competitors.fmtMoney(c.monthlyCents) + '/mo' : '—');
+    return `<option value="${esc(t.name)}" ${t.name === selName ? 'selected' : ''}>${esc(t.name)} · ${price}</option>`;
+  }).join('');
+  const costCell = c => c.monthlyCents !== null
+    ? `${Competitors.fmtMoney(c.monthlyCents)}/mo${c.warn ? ` <span class="badge badge-amber">${esc(c.warn)}</span>` : ''}`
+    : '<span class="comp-muted">Contact sales</span>';
+
+  let rows = '';
+  for (const [cat, label] of CATS) {
+    rows += `<tr class="calc-cat"><td colspan="4">${esc(label)}</td></tr>`;
+    for (const v of _compDoc.competitors.filter(x => x.category === cat)) {
+      const s = _compSel[v.id];
+      const c = Competitors.costForTier(v, v.tiers.find(t => t.name === s.tierName) || v.tiers[0], n);
+      rows += `<tr>
+        <td><label class="calc-chk"><input type="checkbox" data-sel-inc="${esc(v.id)}" ${s.included ? 'checked' : ''}> ${esc(v.name)}</label></td>
+        <td><select data-sel-tier="${esc(v.id)}">${tierOpts(v, s.tierName)}</select></td>
+        <td class="calc-cost">${costCell(c)}</td>
+        <td class="comp-muted">${esc(v.seatModel)}</td>
+      </tr>`;
+    }
+    for (const v of _compDoc.twelveSquared.filter(x => x.category === cat)) {
+      const s = _compSel[v.id];
+      const c = Competitors.costForTier(v, v.tiers.find(t => t.name === s.tierName) || v.tiers[0], n);
+      const active = b.activeCategories.includes(cat);
+      rows += `<tr class="calc-own ${active ? '' : 'calc-dim'}">
+        <td><span class="badge badge-blue">12²</span> ${esc(v.name)}</td>
+        <td><select data-sel-tier="${esc(v.id)}">${tierOpts(v, s.tierName)}</select></td>
+        <td class="calc-cost">${active ? costCell(c) : '<span class="comp-muted">— not counted</span>'}</td>
+        <td class="comp-muted">${active ? 'in suite total' : 'add a ' + esc(label) + ' tool'}</td>
+      </tr>`;
+    }
+  }
+
+  const bar = (lab, cents, cls) =>
+    `<div class="comp-bar-row"><span class="comp-bar-lab">${lab}</span>
+       <div class="comp-bar-track"><div class="comp-bar ${cls}" style="width:${Math.round(cents / max * 100)}%"></div></div>
+       <span class="comp-bar-val">${Competitors.fmtMoney(cents)}/mo</span></div>`;
+  const verdict = cheaper
+    ? `12² saves <strong>${Competitors.fmtMoney(b.savingsCents)}/mo</strong> (${b.savingsPct}%) vs what they have`
+    : b.savingsCents < 0
+    ? `12² costs <strong>${Competitors.fmtMoney(-b.savingsCents)}/mo more</strong> — justify with bundled scope`
+    : `12² matches their current spend — win on bundled scope`;
+
+  return `
+  <div class="comp-hero">
+    <div class="comp-calc-head"><h3>What they have @ ${n} users</h3>
+      <span class="sub">Tick the products they use and pick each subscription level — the 12² suite recomputes to match.</span></div>
+    <table class="calc-table"><thead><tr><th>Product</th><th>Subscription</th><th>Cost @ ${n}</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    <div class="comp-hero-grid totals2">
+      <div class="comp-hero-card"><div class="comp-hero-label">Their stack</div>
+        <div class="comp-hero-num">${Competitors.fmtMoney(b.theirTotal)}<span>/mo</span></div></div>
+      <div class="comp-hero-vs">vs</div>
+      <div class="comp-hero-card is-suite"><div class="comp-hero-label">12² suite <span class="badge badge-blue">12²</span></div>
+        <div class="comp-hero-num">${Competitors.fmtMoney(b.suiteTotal)}<span>/mo</span></div></div>
+    </div>
+    <div class="comp-verdict ${cheaper ? 'good' : 'bad'}">${verdict}</div>
+    <div class="comp-bars">${bar('Their stack', b.theirTotal, 'fill-stack')}${bar('12² suite', b.suiteTotal, 'fill-suite')}</div>
+  </div>`;
+}
+
+// Build a self-contained, print-styled proposal from the CURRENT basket state.
+function buildProposalHTML(n) {
+  const b = Competitors.basketTotals(_compDoc, n, _compSel);
+  const M = Competitors.fmtMoney;
+  const e = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const prospect = ((document.querySelector('#comp-prospect') || {}).value || '').trim();
+  const validUntil = (document.querySelector('#comp-valid') || {}).value || '';
+  const CATLABEL = { photo_docs: 'Photo Documentation', hail_data: 'Hail / Storm Data', code_reports: 'Code Reports' };
+
+  const notes = [];
+  const marker = (item) => {
+    const v = vendorById(item.id);
+    const tier = v.tiers.find(t => t.name === item.tierName) || v.tiers[0];
+    let txt;
+    if (v.seatModel === 'OWN') txt = `${v.name} ${tier.name} — 12² list price.`;
+    else if (tier.confidence === 'quote' && !tier.quoteOnly) txt = `${v.name} ${tier.name} — owner-provided estimate; ${v.name} publishes no public price.`;
+    else if (tier.confidence === 'archive') txt = `${v.name} ${tier.name} — archived figure (${tier.lastVerified}); ${tier.sourceUrl}`;
+    else txt = `${v.name} ${tier.name} — verified ${tier.lastVerified}; ${tier.sourceUrl}`;
+    notes.push(txt);
+    return notes.length;
+  };
+  const row = (item, own) => `<tr><td>${e(item.name)}${own ? ' <span class="own">12²</span>' : ''}</td>`
+    + `<td>${e(item.tierName)}</td>`
+    + `<td class="num">${M(item.monthlyCents)}/mo<sup>${marker(item)}</sup>${item.warn ? ` <span class="warn">${e(item.warn)}</span>` : ''}</td></tr>`;
+
+  let theirRows = '', suiteRows = '';
+  for (const [cat] of CATS) {
+    const t = b.theirs.filter(x => x.category === cat);
+    const s = b.suite.filter(x => x.category === cat);
+    if (t.length) theirRows += `<tr class="cat"><td colspan="3">${CATLABEL[cat]}</td></tr>` + t.map(x => row(x, false)).join('');
+    if (s.length) suiteRows += `<tr class="cat"><td colspan="3">${CATLABEL[cat]}</td></tr>` + s.map(x => row(x, true)).join('');
+  }
+
+  const moSave = b.savingsCents, yrSave = moSave * 12, cheaper = moSave > 0;
+  const headline = cheaper ? `Save ${M(moSave)}/mo &middot; ${M(yrSave)}/yr`
+    : moSave < 0 ? `${M(-moSave)}/mo more — for one unified suite`
+    : `Match your current spend — with one unified suite`;
+  const oldest = [...b.theirs, ...b.suite].map(x => {
+    const v = vendorById(x.id); const tr = v.tiers.find(t => t.name === x.tierName) || v.tiers[0];
+    return tr.lastVerified;
+  }).filter(Boolean).sort()[0] || COMP_TODAY;
+
+  const footRows = notes.map((t, i) => `<li>${e(t)}</li>`).join('');
+  const noteList = footRows ? `<ol class="foot">${footRows}</ol>` : '';
+
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>12² Pricing Proposal${prospect ? ' — ' + e(prospect) : ''}</title>
+<style>
+  *{box-sizing:border-box} html,body{margin:0;background:#fff;color:#0e1b2e;
+    font:14px/1.55 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .page{max-width:760px;margin:0 auto;padding:40px 44px}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0e1b2e;padding-bottom:14px}
+  .brand{font-size:22px;font-weight:800;letter-spacing:-.01em} .brand b{color:#3b6fd4}
+  .doctype{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#5a6b86;margin-top:5px}
+  .meta{font-size:12px;color:#5a6b86;text-align:right;line-height:1.8}
+  h1{font-size:19px;margin:22px 0 0} .prepared{color:#5a6b86;margin:2px 0 18px}
+  .hero{background:#0e1b2e;color:#fff;border-radius:12px;padding:18px 22px;margin-bottom:22px}
+  .hero .big{font-size:26px;font-weight:800;line-height:1.1} .hero .sub{font-size:12px;opacity:.82;margin-top:4px}
+  .cmp{display:flex;gap:14px;margin-bottom:22px}
+  .cmp .box{flex:1;border:1px solid #dbe2ee;border-radius:10px;padding:13px 15px}
+  .cmp .box.suite{border-color:#3b6fd4;background:#f3f7ff}
+  .cmp .lab{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#5a6b86}
+  .cmp .val{font-size:22px;font-weight:800;margin-top:3px} .cmp .yr{font-size:12px;color:#5a6b86}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#3b6fd4;margin:18px 0 6px}
+  table{width:100%;border-collapse:collapse} td{padding:7px 4px;border-bottom:1px solid #eef1f6;font-size:13px}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr.cat td{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#9aa6ba;border-bottom:none;padding-top:10px}
+  tr.tot td{font-weight:800;border-top:2px solid #0e1b2e;border-bottom:none}
+  .own{background:#e6efff;color:#3b6fd4;font-size:10px;font-weight:700;padding:1px 5px;border-radius:5px}
+  .warn{background:#fff3e0;color:#b5651d;font-size:10px;padding:1px 5px;border-radius:5px}
+  sup{color:#9aa6ba;font-size:9px}
+  .foot{font-size:10.5px;color:#5a6b86;margin:10px 0 0;padding-left:18px} .foot li{margin:2px 0}
+  .disc{font-size:10.5px;color:#7a8699;margin-top:18px;border-top:1px solid #eef1f6;padding-top:12px}
+  .pb{margin-top:6px;font-weight:700;color:#0e1b2e}
+  @media print{.page{padding:24px 28px} @page{margin:14mm}}
+</style></head><body><div class="page">
+  <div class="top">
+    <div><div class="brand">12<b>²</b> AI</div><div class="doctype">Pricing Proposal</div></div>
+    <div class="meta">
+      ${prospect ? `Prepared for <strong>${e(prospect)}</strong><br>` : ''}
+      Generated ${e(COMP_TODAY)}<br>${validUntil ? `Valid until ${e(validUntil)}<br>` : ''}
+      Team size: ${n} ${n === 1 ? 'user' : 'users'}
+    </div>
+  </div>
+  <h1>Your software cost vs. the 12² suite</h1>
+  <p class="prepared">${prospect ? 'Prepared for ' + e(prospect) + '. ' : ''}Based on the subscriptions selected below, at ${n} ${n === 1 ? 'user' : 'users'}.</p>
+  <div class="hero"><div class="big">${headline}</div>
+    <div class="sub">Your current stack ${M(b.theirTotal)}/mo vs. the 12² suite ${M(b.suiteTotal)}/mo.</div></div>
+  <div class="cmp">
+    <div class="box"><div class="lab">Your current stack</div><div class="val">${M(b.theirTotal)}<span style="font-size:13px">/mo</span></div><div class="yr">${M(b.theirTotal * 12)}/yr</div></div>
+    <div class="box suite"><div class="lab">12² suite (proposed)</div><div class="val">${M(b.suiteTotal)}<span style="font-size:13px">/mo</span></div><div class="yr">${M(b.suiteTotal * 12)}/yr</div></div>
+  </div>
+  <h2>Your current tools</h2>
+  <table><tbody>${theirRows || '<tr><td colspan="3" style="color:#9aa6ba">No products selected.</td></tr>'}
+    <tr class="tot"><td>Total</td><td></td><td class="num">${M(b.theirTotal)}/mo</td></tr></tbody></table>
+  <h2>Proposed: the 12² suite</h2>
+  <table><tbody>${suiteRows || '<tr><td colspan="3" style="color:#9aa6ba">—</td></tr>'}
+    <tr class="tot"><td>Total</td><td></td><td class="num">${M(b.suiteTotal)}/mo</td></tr></tbody></table>
+  ${noteList}
+  <div class="disc">Competitor pricing reflects publicly listed prices, archived figures, or owner-provided estimates as noted above, current as of ${e(oldest)}; this proposal reflects only the subscriptions and team size selected and updates as those change. 12² figures are list prices. Provided for evaluation; not a binding quote.
+    <div class="pb">Powered by 12² AI</div></div>
+</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},180)}<\/script>
+</body></html>`;
+}
+
+function openProposal() {
+  const html = buildProposalHTML(+document.querySelector('#comp-users').value);
+  const w = window.open('', '_blank');
+  if (!w) { alert('Allow pop-ups for this site to generate the proposal.'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
+/* ---- boot ---------------------------------------------------------------- */
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+$('#signout').onclick = () => { Auth.clearSession(); location.reload(); };
+let signupMode = false;
+$('#toggle-mode').onclick = () => {
+  signupMode = !signupMode;
+  $('#login-title').textContent = signupMode ? 'Create account' : 'Sign in';
+  $('#login-submit').textContent = signupMode ? 'Create account' : 'Sign In';
+  $('#signup-product').style.display = signupMode ? 'block' : 'none';
+  $('#toggle-mode').textContent = signupMode ? '← Have an account? Sign in' : 'New here? Create an account →';
+  $('#loginerr').textContent = '';
+};
+$('#loginform').onsubmit = async (e) => {
+  e.preventDefault(); $('#loginerr').textContent = '';
+  const email = $('#email').value.trim(), pw = $('#password').value;
+  try {
+    if (signupMode) {
+      const r = await fetch('/api/signup', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password: pw, product: $('#signup-product').value }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'Sign-up failed');
+    }
+    await Auth.signIn(email, pw); hideLogin(); await boot();
+  } catch (err) { $('#loginerr').textContent = err.message; }
+};
+
+async function boot() {
+  const token = await Auth.freshToken();
+  if (CONFIG.requireAuth && !token) { showLogin(); return; }
+  const me = await Entitlements.load();
+  if (CONFIG.requireAuth && !me) { showLogin(); return; }
+  hideLogin();
+  $('#who').textContent = (me && me.user && me.user.email) || (token && Auth.emailFromToken(token)) || '';
+  Entitlements.gateUI();
+  loadLauncher();
+}
+boot();
+
+/* ================= liquid-glass sign-in =================
+   Vendored from fieldcam-suite/src/LiquidGlass.tsx (spec:
+   codesandmore/data/research/liquid_signin_spec.md). The LiquidGlass math is
+   sacred — TypeScript types stripped ONLY, everything else verbatim. */
+class LiquidGlass {
+  constructor(bgEl, options = {}) {
+    this.bg = bgEl;
+    this.opt = Object.assign({
+      size: 120, shape: 'circle', rx: null,
+      distort: 0.06, edgeCurl: 0.04, brightness: 0.06,
+      specular: 0.20, border: 0.18, borderWidth: 1,
+      sceneW: null, sceneH: null,
+    }, options);
+    this._lut = null;
+    this._lutKey = '';
+  }
+
+  _getLUT(D) {
+    const key = `${D}:${this.opt.distort}:${this.opt.edgeCurl}`;
+    if (this._lut && this._lutKey === key) return this._lut;
+    this._lutKey = key;
+    const lut = new Float32Array(256);
+    for (let i = 0; i < 256; i++) {
+      const r = i / 255;
+      if (r < 0.7) {
+        lut[i] = r * (1.0 - this.opt.distort * (1 - r));
+      } else {
+        const t = (r - 0.7) / 0.3;
+        lut[i] = Math.min(0.985, r * (1 - this.opt.distort * (1 - r)) + t * t * this.opt.edgeCurl);
+      }
+    }
+    return (this._lut = lut);
+  }
+
+  _inShape(nx, ny, D) {
+    const { shape, rx, size } = this.opt;
+    if (shape === 'circle') return nx * nx + ny * ny < 1.0;
+    const r = (rx != null ? rx : size * 0.3) / (size / 2);
+    const ax = Math.abs(nx), ay = Math.abs(ny), lim = 1 - r;
+    if (ax > 1 || ay > 1) return false;
+    if (ax <= lim || ay <= lim) return true;
+    return (ax - lim) ** 2 + (ay - lim) ** 2 <= r * r;
+  }
+
+  _normR(nx, ny, D) {
+    const { shape, rx, size } = this.opt;
+    if (shape === 'circle') return Math.sqrt(nx * nx + ny * ny);
+    const r = (rx != null ? rx : size * 0.3) / (size / 2);
+    const ax = Math.abs(nx), ay = Math.abs(ny), lim = 1 - r;
+    const dx = Math.max(0, ax - lim), dy = Math.max(0, ay - lim);
+    const dr = Math.sqrt(dx * dx + dy * dy);
+    return (dr > 0 ? (lim + dr) : Math.max(ax, ay));
+  }
+
+  _cropBackground(cx, cy, D, sW, sH) {
+    if (!this.bg) return null;
+    const bw = this.bg.naturalWidth || this.bg.videoWidth;
+    const bh = this.bg.naturalHeight || this.bg.videoHeight;
+    if (!bw || !bh) return null;
+    const R = D / 2;
+    const off = document.createElement('canvas');
+    off.width = D; off.height = D;
+    const octx = off.getContext('2d');
+    octx.drawImage(this.bg,
+      Math.max(0, (cx - R) * (bw / sW)), Math.max(0, (cy - R) * (bh / sH)),
+      D * (bw / sW), D * (bh / sH),
+      0, 0, D, D
+    );
+    return octx.getImageData(0, 0, D, D).data;
+  }
+
+  _bilinear(sd, x, y, D) {
+    const x0 = Math.floor(x), y0 = Math.floor(y);
+    const x1 = Math.min(D - 1, x0 + 1), y1 = Math.min(D - 1, y0 + 1);
+    const fx = x - x0, fy = y - y0;
+    const w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
+    const a = (y0 * D + x0) * 4, b = (y0 * D + x1) * 4, c = (y1 * D + x0) * 4, d = (y1 * D + x1) * 4;
+    return [
+      sd[a] * w00 + sd[b] * w10 + sd[c] * w01 + sd[d] * w11,
+      sd[a + 1] * w00 + sd[b + 1] * w10 + sd[c + 1] * w01 + sd[d + 1] * w11,
+      sd[a + 2] * w00 + sd[b + 2] * w10 + sd[c + 2] * w01 + sd[d + 2] * w11,
+    ];
+  }
+
+  _drawOverlays(ctx, D, R) {
+    const { shape, rx, size, specular, border, borderWidth } = this.opt;
+    const RX = rx != null ? rx : size * 0.3;
+    ctx.save();
+    ctx.beginPath();
+    shape === 'circle' ? ctx.arc(R, R, R, 0, Math.PI * 2) : ctx.roundRect(0, 0, D, D, RX);
+    ctx.clip();
+    if (specular > 0) {
+      const grd = ctx.createRadialGradient(R * 0.5, R * 0.28, 0, R * 0.5, R * 0.38, R * 0.45);
+      grd.addColorStop(0, `rgba(255,255,255,${specular})`);
+      grd.addColorStop(0.6, `rgba(255,255,255,${+(specular * 0.2).toFixed(3)})`);
+      grd.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grd; ctx.fillRect(0, 0, D, D);
+    }
+    ctx.restore();
+    if (border > 0) {
+      const h = borderWidth / 2;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255,255,255,${border})`;
+      ctx.lineWidth = borderWidth;
+      ctx.beginPath();
+      shape === 'circle' ? ctx.arc(R, R, R - h, 0, Math.PI * 2)
+        : ctx.roundRect(h, h, D - borderWidth, D - borderWidth, RX);
+      ctx.stroke(); ctx.restore();
+    }
+  }
+
+  render(canvas, cx, cy, sW, sH) {
+    const D = this.opt.size, R = D / 2;
+    if (canvas.width !== D || canvas.height !== D) {
+      canvas.width = D; canvas.height = D;
+    }
+    const sd = this._cropBackground(cx, cy, D, sW, sH);
+    if (!sd) return false;
+    const lut = this._getLUT(D);
+    const ctx = canvas.getContext('2d');
+    const out = ctx.createImageData(D, D);
+    const od = out.data;
+    const boost = this.opt.brightness;
+    for (let py = 0; py < D; py++) {
+      for (let px = 0; px < D; px++) {
+        const nx = (px / R) - 1, ny = (py / R) - 1;
+        if (!this._inShape(nx, ny, D)) {
+          const i = (py * D + px) * 4; od[i] = od[i + 1] = od[i + 2] = od[i + 3] = 0; continue;
+        }
+        const normR = this._normR(nx, ny, D);
+        const alpha = normR > 0.93 ? Math.max(0, (1 - normR) / 0.07) : 1.0;
+        const theta = Math.atan2(ny, nx);
+        const bend = lut[Math.min(255, Math.round(normR * 255))];
+        const sx = Math.min(D - 1.001, Math.max(0, bend * Math.cos(theta) * R + R));
+        const sy = Math.min(D - 1.001, Math.max(0, bend * Math.sin(theta) * R + R));
+        const [rv, gv, bv] = this._bilinear(sd, sx, sy, D);
+        const b = (1 + boost * Math.max(0, 1 - normR * 1.6)) * 0.75;
+        const oi = (py * D + px) * 4;
+        od[oi] = Math.min(255, rv * b); od[oi + 1] = Math.min(255, gv * b);
+        od[oi + 2] = Math.min(255, bv * b); od[oi + 3] = Math.round(alpha * 255);
+      }
+    }
+    ctx.clearRect(0, 0, D, D);
+    ctx.putImageData(out, 0, 0);
+    this._drawOverlays(ctx, D, R);
+    return true;
+  }
+}
+
+const LQ_GLASS_OPTIONS = {
+  shape: 'roundedrect',
+  rx: 16,
+  distort: 0.06,
+  edgeCurl: 0.04,
+  brightness: 0.06,
+  specular: 0.20,
+  border: 0.18,
+  borderWidth: 1,
+};
+const LQ_VIDEO_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260606_135315_5f9e8a4c-09bc-4a97-9f75-8a387d4258ee.mp4';
+
+let lqState = null;
+function mountLiquidSignin() {
+  if (lqState) return;
+  const SCENE_EL = document.getElementById('lq-scene');
+  const CARD_EL = document.getElementById('lq-card');
+  const GLASS_CV = document.getElementById('lq-canvas');
+  if (!SCENE_EL || !CARD_EL || !GLASS_CV) return;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const BG_VIDEO = document.createElement('video');
+  BG_VIDEO.className = 'lq-video';
+  BG_VIDEO.autoplay = true; BG_VIDEO.muted = true; BG_VIDEO.loop = true;
+  BG_VIDEO.playsInline = true; BG_VIDEO.setAttribute('playsinline', '');
+  BG_VIDEO.crossOrigin = 'anonymous';
+  BG_VIDEO.src = LQ_VIDEO_URL;
+  SCENE_EL.insertBefore(BG_VIDEO, SCENE_EL.firstChild);
+
+  let glass = null;
+  let rafId = null;
+  let isRunning = false;
+
+  /* safety guard: any render failure (canvas taint / SecurityError / video
+     failure) stops the loop and falls back to a CSS glass card — sign-in
+     must never break because of the effect. */
+  function fallbackGlass() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null; isRunning = false;
+    GLASS_CV.style.display = 'none';
+    CARD_EL.classList.add('lq-fallback');
+  }
+
+  function setupGlass() {
+    const sceneR = SCENE_EL.getBoundingClientRect();
+    const cardR = CARD_EL.getBoundingClientRect();
+    const W = Math.round(cardR.width);
+    const H = Math.round(cardR.height);
+    const isMobile = W < 640;
+    const D = isMobile ? W : Math.max(W, H);
+    GLASS_CV.width = D;
+    GLASS_CV.height = D;
+    glass = new LiquidGlass(BG_VIDEO, Object.assign({}, LQ_GLASS_OPTIONS, {
+      size: D,
+      sceneW: sceneR.width,
+      sceneH: sceneR.height,
+    }));
+  }
+
+  function renderLoop() {
+    if (!glass) return;
+    try {
+      const sceneR = SCENE_EL.getBoundingClientRect();
+      const cardR = CARD_EL.getBoundingClientRect();
+      const cx = cardR.left - sceneR.left + cardR.width / 2;
+      const cy = cardR.top - sceneR.top + cardR.height / 2;
+      glass.opt.sceneW = sceneR.width;
+      glass.opt.sceneH = sceneR.height;
+      glass.render(GLASS_CV, cx, cy, sceneR.width, sceneR.height);
+    } catch (err) {
+      fallbackGlass();
+      return;
+    }
+    if (reduced) { try { BG_VIDEO.pause(); } catch (_) {} return; } // static refraction: render once
+    rafId = requestAnimationFrame(renderLoop);
+  }
+
+  function startGlass() {
+    if (isRunning) return;
+    isRunning = true;
+    setupGlass();
+    renderLoop();
+  }
+  function stopGlass() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    isRunning = false;
+  }
+  function handleResize() {
+    stopGlass();
+    setupGlass();
+    renderLoop();
+    isRunning = true;
+  }
+
+  BG_VIDEO.addEventListener('canplay', startGlass);
+  BG_VIDEO.addEventListener('playing', startGlass);
+  BG_VIDEO.addEventListener('error', fallbackGlass);
+  if (BG_VIDEO.readyState >= 3) startGlass();
+  window.addEventListener('resize', handleResize);
+
+  lqState = { stop: stopGlass, resize: handleResize, video: BG_VIDEO, card: CARD_EL, canvas: GLASS_CV };
+}
+function teardownLiquidSignin() {
+  if (!lqState) return;
+  lqState.stop();
+  window.removeEventListener('resize', lqState.resize);
+  try { lqState.video.pause(); } catch (_) {}
+  lqState.video.remove();
+  lqState.canvas.style.display = '';
+  lqState.card.classList.remove('lq-fallback');
+  lqState = null;
+}
+
+/* password visibility toggle (lucide eye / eye-off) */
+(function () {
+  const LQ_EYE = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>';
+  const LQ_EYE_OFF = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>';
+  const btn = document.getElementById('lq-eye');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const pw = document.getElementById('password');
+    const showing = pw.type === 'text';
+    pw.type = showing ? 'password' : 'text';
+    btn.innerHTML = showing ? LQ_EYE : LQ_EYE_OFF;
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  });
+})();
+/* Reset password mini-flow (spec: codesandmore/data/research/password_reset_spec.md):
+   swaps the card to an email field, POSTs /auth/v1/recover with redirect_to
+   <origin>/reset, and always shows the same neutral confirmation — no
+   account enumeration. 429 gets a friendly rate-limit message. */
+(function () {
+  const resetBtn = document.querySelector('.lq-reset');
+  const loginForm = document.getElementById('loginform');
+  const resetForm = document.getElementById('lq-resetform');
+  if (!resetBtn || !loginForm || !resetForm) return;
+  const heading = document.querySelector('#login .lq-heading');
+  const sub = document.querySelector('#login .lq-sub');
+  const errEl = document.getElementById('lq-reset-err');
+  const okEl = document.getElementById('lq-reset-ok');
+  let saved = null; // heading/sub at the moment the reset flow opened
+  function setMode(reset) {
+    if (reset && loginForm.hidden) return;
+    if (reset) saved = { h: heading.textContent, s: sub.textContent };
+    loginForm.hidden = reset;
+    resetForm.hidden = !reset;
+    heading.textContent = reset ? 'Reset your password' : (saved ? saved.h : heading.textContent);
+    sub.textContent = reset ? 'Enter your account email and we’ll send you a reset link' : (saved ? saved.s : sub.textContent);
+    errEl.textContent = ''; okEl.hidden = true;
+    if (reset) {
+      const known = document.getElementById('email').value.trim();
+      if (known) document.getElementById('lq-reset-email').value = known;
+      document.getElementById('lq-reset-email').focus();
+    }
+  }
+  resetBtn.addEventListener('click', function () { setMode(true); });
+  document.getElementById('lq-reset-back').addEventListener('click', function () { setMode(false); });
+  resetForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    errEl.textContent = ''; okEl.hidden = true;
+    const email = document.getElementById('lq-reset-email').value.trim();
+    if (!email) return;
+    const btn = document.getElementById('lq-reset-send');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const base = (CONFIG.supabaseUrl || '').replace(/\/$/, '');
+      const redirect = encodeURIComponent(location.origin + '/reset');
+      const r = await fetch(`${base}/auth/v1/recover?redirect_to=${redirect}`, {
+        method: 'POST',
+        headers: { apikey: CONFIG.supabaseAnonKey || '', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, gotrue_meta_security: {} }),
+      });
+      if (r.status === 429) {
+        errEl.textContent = 'Too many requests — try again in a minute.';
+      } else if (!r.ok) {
+        const j = await r.json().catch(() => null);
+        errEl.textContent = (j && (j.error_description || j.msg || j.error)) || 'Could not send the reset link — try again.';
+      } else {
+        okEl.hidden = false; // same copy whether or not the account exists
+      }
+    } catch (_) {
+      errEl.textContent = 'Network error — try again.';
+    }
+    btn.disabled = false; btn.textContent = 'Send reset link';
+  });
+  if (location.hash === '#reset') setMode(true); // /app#reset (e.g. from an expired link)
+})();
+/* =============== end liquid-glass sign-in =============== */
+</script>
+</body>
+</html>
