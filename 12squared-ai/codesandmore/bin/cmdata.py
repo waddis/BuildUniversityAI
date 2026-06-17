@@ -31,6 +31,9 @@ REPORT_FIELDS = {"property_id", "address", "city", "state", "jurisdiction", "cod
                  "title", "summary", "status", "source", "job_id", "file_url", "created_by"}
 REQ_FIELDS = {"report_id", "category", "code_source", "section", "requirement", "trigger",
               "applies", "cost_estimate_cents", "notes", "sort_order"}
+# Citation provenance columns (migration 0016) carried alongside REQ_FIELDS so
+# each requirement persists where the rule came from and how confident we are.
+REQ_PROVENANCE_FIELDS = ("trade", "source_url", "confidence", "verified_at", "edition")
 
 
 class CMError(Exception):
@@ -214,20 +217,32 @@ def add_requirement(body: dict, token: str | None = None, caller=None) -> dict:
     return (rows or [{}])[0]
 
 
-def add_requirements(report_id: str, rows: list, token: str | None = None, caller=None) -> list:
-    """Bulk-insert requirement rows (cm_requirements-shaped dicts) onto a report."""
-    if not report_id:
-        raise CMError(400, "report_id is required")
-    parent = _parent_report(report_id, token, caller)
-    payload = []
+def _requirement_insert_rows(report_id: str, rows: list) -> list:
+    """Pure row-shaper for cm_requirements bulk inserts: keep the existing
+    REQ_FIELDS columns, stamp report_id, and carry the citation-provenance
+    columns (REQ_PROVENANCE_FIELDS). Rows lacking `requirement` are skipped;
+    org_id stamping and PGRST102 normalization stay in add_requirements."""
+    shaped = []
     for r in rows or []:
         if not (r or {}).get("requirement"):
             continue
         row = _clean(REQ_FIELDS, r)
         row["report_id"] = report_id
-        if parent.get("org_id"):
+        for k in REQ_PROVENANCE_FIELDS:
+            row[k] = (r or {}).get(k)
+        shaped.append(row)
+    return shaped
+
+
+def add_requirements(report_id: str, rows: list, token: str | None = None, caller=None) -> list:
+    """Bulk-insert requirement rows (cm_requirements-shaped dicts) onto a report."""
+    if not report_id:
+        raise CMError(400, "report_id is required")
+    parent = _parent_report(report_id, token, caller)
+    payload = _requirement_insert_rows(report_id, rows)
+    if parent.get("org_id"):
+        for row in payload:
             row["org_id"] = parent["org_id"]
-        payload.append(row)
     if not payload:
         return []
     # PostgREST bulk inserts require identical keys on every row (PGRST102) —
@@ -380,3 +395,14 @@ if __name__ == "__main__":
     assert best_state["level"] == "state", best_state
     assert _best_discipline_row([], county_fips=None, place_fips=None) is None
     print("cmdata discipline-row selection OK")
+
+    shaped = _requirement_insert_rows("rep-1", [{
+        "category": "roofing", "code_source": "IRC 2021", "section": "R905.1",
+        "requirement": "x: y", "trigger": None, "sort_order": 0,
+        "trade": "roofing", "source_url": "https://x", "confidence": "high",
+        "verified_at": "2026-06-09", "edition": "2021"}])
+    row = shaped[0]
+    assert row["report_id"] == "rep-1"
+    for k in ("trade", "source_url", "confidence", "verified_at", "edition"):
+        assert k in row, k
+    print("cmdata requirement provenance shaping OK")
