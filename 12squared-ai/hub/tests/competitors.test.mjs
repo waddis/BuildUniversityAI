@@ -67,3 +67,49 @@ test("fmtMoney formats whole and fractional dollars", () => {
 test("daysSince computes calendar days", () => {
   assert.equal(C.daysSince("2026-04-15", "2026-06-17"), 63);
 });
+
+const hailtraceFlat = {
+  seatModel: "FLAT_ANNUAL",
+  tiers: [
+    { name: "Free", monthlyCents: 0, annualTotalCents: null, quoteOnly: false },
+    { name: "Maps Only", monthlyCents: null, annualTotalCents: null, quoteOnly: true },
+    { name: "Maps & Data", monthlyCents: null, annualTotalCents: 500000, quoteOnly: false },
+  ],
+};
+
+test("FLAT_ANNUAL is annual/12, independent of N, skips the $0 Free tier", () => {
+  assert.equal(C.costAtUsers(hailtraceFlat, 1).monthlyCents, Math.round(500000 / 12)); // 41667
+  assert.equal(C.costAtUsers(hailtraceFlat, 100).monthlyCents, Math.round(500000 / 12));
+  assert.equal(C.costAtUsers(hailtraceFlat, 10).tierName, "Maps & Data"); // not "Free"
+});
+
+test("stackTotals: one competitor per category, no hail double-count", () => {
+  const doc = {
+    twelveSquared: [
+      { name: "Fieldcam", category: "photo_docs", seatModel: "OWN",
+        tiers: [{ name: "Fieldcam", monthlyCents: 4900, quoteOnly: false }] },
+      { name: "HailScan", category: "hail_data", seatModel: "OWN",
+        tiers: [{ name: "Single State", monthlyCents: 14900, quoteOnly: false }] },
+      { name: "Codes&More", category: "code_reports", seatModel: "OWN",
+        tiers: [{ name: "Codes&More", monthlyCents: 9900, quoteOnly: false }] },
+    ],
+    competitors: [
+      { name: "CompanyCam", category: "photo_docs", seatModel: "PER_SEAT",
+        tiers: [{ name: "Pro", monthlyCents: 7900, includedSeats: 3, additionalSeatCents: 2900, quoteOnly: false }] },
+      { name: "Interactive Hail Maps", category: "hail_data", seatModel: "FLAT_CONCURRENCY",
+        tiers: [{ name: "One State", monthlyCents: null, annualTotalCents: 99900, concurrency: 5, quoteOnly: false }] },
+      { name: "HailTrace", category: "hail_data", seatModel: "FLAT_ANNUAL", tiers: hailtraceFlat.tiers },
+      { name: "One Click Code", category: "code_reports", seatModel: "FLAT_SEAT_CAP",
+        tiers: [{ name: "Pro", monthlyCents: 4900, seatCap: 50, quoteOnly: false }] },
+    ],
+  };
+  const t = C.stackTotals(doc, 10);
+  assert.equal(t.suite.totalCents, 4900 + 14900 + 9900);          // 29700
+  assert.equal(t.stack.totalCents, 28200 + 8325 + 4900);          // 41425 (IHM is cheapest hail)
+  assert.equal(t.savingsCents, 41425 - 29700);                    // 11725
+  assert.equal(t.savingsPct, 28);
+  // HailTrace ($416.67) is the pricier hail option -> alternative, not summed
+  assert.equal(t.stack.alternatives.length, 1);
+  assert.equal(t.stack.alternatives[0].name, "HailTrace");
+  assert.equal(t.stack.quoteOnly.length, 0);
+});

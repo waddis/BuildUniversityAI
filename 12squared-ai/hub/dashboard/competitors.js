@@ -12,8 +12,14 @@
   }
 
   function firstPriced(tiers) {
+    // prefer a real (positive) priced, non-quote tier so a $0 "Free" tier
+    // never becomes the representative price; fall back to any priced tier.
     return tiers.find(t => !t.quoteOnly &&
-      (t.monthlyCents !== null || t.annualTotalCents !== null)) || tiers[0];
+        ((t.monthlyCents !== null && t.monthlyCents > 0) ||
+         (t.annualTotalCents !== null && t.annualTotalCents > 0)))
+      || tiers.find(t => !t.quoteOnly &&
+        (t.monthlyCents !== null || t.annualTotalCents !== null))
+      || tiers[0];
   }
 
   function costAtUsers(vendor, n) {
@@ -44,6 +50,13 @@
         explanation: `${t.name}: annual, ${t.concurrency} concurrent sessions (not per-user)`,
         seatMath: `${fmtMoney(t.annualTotalCents)}/yr ÷ 12 = ${fmtMoney(monthly)}/mo · ${t.concurrency} concurrent (not per-user)` };
     }
+    if (model === "FLAT_ANNUAL") {
+      const t = firstPriced(vendor.tiers);
+      const monthly = Math.round(t.annualTotalCents / 12);
+      return { monthlyCents: monthly, tierName: t.name,
+        explanation: `${t.name}: flat annual price`,
+        seatMath: `${fmtMoney(t.annualTotalCents)}/yr ÷ 12 = ${fmtMoney(monthly)}/mo (flat, annual)` };
+    }
     if (model === "OWN") {
       const t = firstPriced(vendor.tiers);
       if (t.quoteOnly || t.monthlyCents === null)
@@ -56,7 +69,45 @@
       explanation: "Contact sales — no public price", seatMath: "Contact sales" };
   }
 
-  const api = { costAtUsers, fmtMoney, daysSince };
+  // Build "the stack a buyer would assemble to match the 12² suite" vs the
+  // suite itself, at n users. One competitor per category (cheapest priced),
+  // so hail is never double-counted; pricier rivals become alternatives and
+  // unpriced rivals are listed as quote-only (not summed).
+  function stackTotals(doc, n) {
+    const cats = ["photo_docs", "hail_data", "code_reports"];
+
+    const suiteItems = doc.twelveSquared.map(v => {
+      const c = costAtUsers(v, n);
+      return { name: v.name, category: v.category,
+        monthlyCents: c.monthlyCents, tierName: c.tierName };
+    });
+    const suiteTotal = suiteItems.reduce((s, i) => s + (i.monthlyCents || 0), 0);
+
+    const stackItems = [], alternatives = [], quoteOnly = [];
+    for (const cat of cats) {
+      const rivals = doc.competitors
+        .filter(v => v.category === cat)
+        .map(v => { const c = costAtUsers(v, n);
+          return { name: v.name, category: cat, monthlyCents: c.monthlyCents, tierName: c.tierName }; });
+      rivals.filter(r => r.monthlyCents === null).forEach(r => quoteOnly.push(r.name));
+      const priced = rivals.filter(r => r.monthlyCents !== null)
+        .sort((a, b) => a.monthlyCents - b.monthlyCents);
+      if (priced.length) {
+        stackItems.push(priced[0]);
+        priced.slice(1).forEach(r => alternatives.push(r));
+      }
+    }
+    const stackTotal = stackItems.reduce((s, i) => s + i.monthlyCents, 0);
+    const savings = stackTotal - suiteTotal;
+    return {
+      suite: { items: suiteItems, totalCents: suiteTotal },
+      stack: { items: stackItems, totalCents: stackTotal, alternatives, quoteOnly },
+      savingsCents: savings,
+      savingsPct: stackTotal > 0 ? Math.round((savings / stackTotal) * 100) : 0,
+    };
+  }
+
+  const api = { costAtUsers, fmtMoney, daysSince, stackTotals };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Competitors = api;
 })(typeof window !== "undefined" ? window : this);

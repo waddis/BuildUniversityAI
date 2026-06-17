@@ -155,7 +155,7 @@
     {
       "id": "hailtrace", "name": "HailTrace", "category": "hail_data",
       "competesWith": ["hailscan"], "url": "https://hailtrace.com/plans",
-      "pricingPublic": false, "seatModel": "QUOTE_ONLY",
+      "pricingPublic": false, "seatModel": "FLAT_ANNUAL",
       "tiers": [
         {"name": "Free", "monthlyCents": 0, "annualTotalCents": null, "billingUnit": "month",
          "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
@@ -165,16 +165,16 @@
          "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
          "features": ["maps"], "overage": null, "quoteOnly": true, "concurrency": null,
          "sourceUrl": "https://hailtrace.com/plans", "lastVerified": "2026-06-17", "confidence": "quote"},
-        {"name": "Maps & Data", "monthlyCents": null, "annualTotalCents": null, "billingUnit": "quote",
+        {"name": "Maps & Data", "monthlyCents": null, "annualTotalCents": 500000, "billingUnit": "year",
          "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
-         "features": ["maps + data"], "overage": null, "quoteOnly": true, "concurrency": null,
-         "sourceUrl": "https://hailtrace.com/plans", "lastVerified": "2026-06-17", "confidence": "quote"},
+         "features": ["maps + data"], "overage": null, "quoteOnly": false, "concurrency": null,
+         "sourceUrl": "owner-provided estimate (HailTrace publishes no public price)", "lastVerified": "2026-06-17", "confidence": "quote"},
         {"name": "Enterprise", "monthlyCents": null, "annualTotalCents": null, "billingUnit": "quote",
          "includedSeats": null, "additionalSeatCents": null, "seatCap": null,
          "features": ["custom"], "overage": null, "quoteOnly": true, "concurrency": null,
          "sourceUrl": "https://hailtrace.com/plans", "lastVerified": "2026-06-17", "confidence": "quote"}
       ],
-      "notes": "All paid tiers are quote-only — no public price. Do NOT populate dollar figures. Third-party numbers are unverifiable/fabricated.",
+      "notes": "HailTrace publishes no public price. Maps & Data listed at $5,000/yr per owner-provided estimate (confidence: quote, not a verified public figure); Maps Only and Enterprise remain quote-only. Do NOT treat as a confirmed public price.",
       "gaps": ["no public pricing (friction)", "no photo docs", "no code reports"],
       "whyWeWin": ["12² publishes transparent pricing", "all-in-one suite"]
     }

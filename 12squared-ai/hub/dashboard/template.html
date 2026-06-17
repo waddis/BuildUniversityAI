@@ -190,8 +190,35 @@
     .lq-sub{font-size:16px}
   }
   /* competitor pricing tab */
-  .comp-controls { margin: 12px 0; display: flex; align-items: center; gap: 12px; }
-  .comp-controls input[type=range] { flex: 1; max-width: 360px; }
+  .comp-controls { margin: 0 0 14px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 5; background: rgba(12,16,28,.92); backdrop-filter: blur(8px);
+    border-radius: 10px; border: 1px solid rgba(255,255,255,.08); }
+  .comp-controls input[type=range] { flex: 1; max-width: 360px; accent-color: #6f97ff; }
+  /* hero total banner */
+  .comp-hero { border: 1px solid rgba(255,255,255,.10); border-radius: 14px; padding: 18px 20px; margin: 4px 0 22px;
+    background: linear-gradient(180deg, rgba(80,140,255,.07), rgba(80,140,255,.02)); }
+  .comp-hero-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; }
+  .comp-hero-card { padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); }
+  .comp-hero-card.is-suite { background: rgba(80,140,255,.10); border-color: rgba(80,140,255,.28); }
+  .comp-hero-vs { font-size: 13px; opacity: .5; text-transform: uppercase; letter-spacing: .08em; }
+  .comp-hero-label { font-size: 12px; opacity: .7; margin-bottom: 6px; }
+  .comp-hero-num { font-size: 30px; font-weight: 700; line-height: 1; }
+  .comp-hero-num span { font-size: 14px; font-weight: 500; opacity: .6; margin-left: 3px; }
+  .comp-hero-pills { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .comp-pill { font-size: 11px; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.06); white-space: nowrap; }
+  .comp-verdict { margin: 16px 0 4px; font-size: 15px; padding: 10px 14px; border-radius: 10px; }
+  .comp-verdict.good { background: rgba(60,200,120,.12); color: #8fe9b3; }
+  .comp-verdict.bad  { background: rgba(240,140,90,.12); color: #f7b690; }
+  .comp-bars { display: grid; gap: 8px; margin: 10px 0 6px; }
+  .comp-bar-row { display: grid; grid-template-columns: 86px 1fr 92px; align-items: center; gap: 10px; }
+  .comp-bar-lab { font-size: 12px; opacity: .7; }
+  .comp-bar-track { height: 14px; background: rgba(255,255,255,.06); border-radius: 7px; overflow: hidden; }
+  .comp-bar { height: 100%; border-radius: 7px; transition: width .25s ease; }
+  .comp-bar.fill-stack { background: linear-gradient(90deg,#c98a6a,#e0a987); }
+  .comp-bar.fill-suite { background: linear-gradient(90deg,#5a8bff,#7fa8ff); }
+  .comp-bar-val { font-size: 12px; text-align: right; opacity: .85; }
+  .comp-hero-foot { margin-top: 10px; }
+  @media (max-width: 640px) { .comp-hero-grid { grid-template-columns: 1fr; } .comp-hero-vs { display: none; } }
   .comp-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; }
   .comp-table th, .comp-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; }
   .comp-own { background: rgba(80,140,255,.08); }
@@ -257,7 +284,7 @@
   <!-- COMPETITORS -->
   <section class="view" id="view-competitors">
     <h2>Competitor Pricing</h2>
-    <p class="sub">Verified public pricing vs. the 12² suite. No number appears without a source + date.</p>
+    <p class="sub">Competitor pricing vs. the full 12² suite. Every figure carries a source + date; owner estimates and quote-only vendors are labelled, never shown as confirmed public prices.</p>
     <div class="comp-controls">
       <label for="comp-users">Team size: <strong id="comp-users-val">10</strong> users</label>
       <input type="range" id="comp-users" min="1" max="100" value="10" step="1">
@@ -660,7 +687,9 @@ async function loadCompetitors() {
 
 function compBadge(tier) {
   const warnDays = _compDoc.stalenessWarnDays || 60;
-  if (tier.confidence === 'quote') return '<span class="badge badge-grey">quote only</span>';
+  if (tier.confidence === 'quote') return tier.quoteOnly
+    ? '<span class="badge badge-grey">quote only</span>'
+    : '<span class="badge badge-amber">owner estimate</span>';
   if (tier.confidence === 'archive') return `<span class="badge badge-amber">from archive ${esc(tier.lastVerified)}</span>`;
   if (tier.confidence === 'internal') return '<span class="badge badge-grey">internal</span>';
   const age = Competitors.daysSince(tier.lastVerified, COMP_TODAY);
@@ -679,7 +708,7 @@ function renderCompetitors(n) {
   document.querySelector('#comp-banner').innerHTML =
     `Oldest verified date: <strong>${esc(oldest)}</strong> · re-verify quote-only & archive sources in a browser before relying.`;
 
-  let html = '';
+  let html = renderTotals(n);
   for (const [cat, label] of CATS) {
     const own = _compDoc.twelveSquared.filter(v => v.category === cat);
     const rivals = _compDoc.competitors.filter(v => v.category === cat);
@@ -689,7 +718,7 @@ function renderCompetitors(n) {
     </tr></thead><tbody>`;
     for (const v of own.concat(rivals)) {
       const c = Competitors.costAtUsers(v, n);
-      const t0 = v.tiers[0];
+      const t0 = v.tiers.find(t => t.name === c.tierName) || v.tiers[0];
       const native = v.tiers.map(t => t.quoteOnly ? `${esc(t.name)}: Contact sales`
         : `${esc(t.name)}: ${Competitors.fmtMoney(t.monthlyCents !== null ? t.monthlyCents : t.annualTotalCents)}${t.monthlyCents !== null ? '/mo' : '/yr'}`).join('<br>');
       const isOwn = v.seatModel === 'OWN';
@@ -750,6 +779,45 @@ function renderBattlecards(n) {
     </div>`;
   }
   return `<h3>Battlecards</h3><div class="comp-cards">${cards}</div>`;
+}
+
+function renderTotals(n) {
+  const t = Competitors.stackTotals(_compDoc, n);
+  const stack = t.stack.totalCents, suite = t.suite.totalCents;
+  const max = Math.max(stack, suite, 1);
+  const cheaper = t.savingsCents > 0;
+  const pill = i => `<span class="comp-pill">${esc(i.name)} ${Competitors.fmtMoney(i.monthlyCents)}</span>`;
+  const altNote = t.stack.alternatives.length
+    ? ` Cheapest option per category used; alternative: ${t.stack.alternatives.map(a => `${esc(a.name)} ${Competitors.fmtMoney(a.monthlyCents)}/mo`).join(', ')}.` : '';
+  const quoteNote = t.stack.quoteOnly.length
+    ? ` Quote-only (not summed): ${t.stack.quoteOnly.map(esc).join(', ')}.` : '';
+  const bar = (lab, cents, cls) =>
+    `<div class="comp-bar-row"><span class="comp-bar-lab">${lab}</span>
+       <div class="comp-bar-track"><div class="comp-bar ${cls}" style="width:${Math.round(cents / max * 100)}%"></div></div>
+       <span class="comp-bar-val">${Competitors.fmtMoney(cents)}/mo</span></div>`;
+  return `
+  <div class="comp-hero">
+    <div class="comp-hero-grid">
+      <div class="comp-hero-card">
+        <div class="comp-hero-label">Competitor stack @ ${n}</div>
+        <div class="comp-hero-num">${Competitors.fmtMoney(stack)}<span>/mo</span></div>
+        <div class="comp-hero-pills">${t.stack.items.map(pill).join('')}</div>
+      </div>
+      <div class="comp-hero-vs">vs</div>
+      <div class="comp-hero-card is-suite">
+        <div class="comp-hero-label">12² suite @ ${n} <span class="badge badge-blue">12²</span></div>
+        <div class="comp-hero-num">${Competitors.fmtMoney(suite)}<span>/mo</span></div>
+        <div class="comp-hero-pills">${t.suite.items.map(pill).join('')}</div>
+      </div>
+    </div>
+    <div class="comp-verdict ${cheaper ? 'good' : 'bad'}">
+      ${cheaper
+        ? `12² suite saves <strong>${Competitors.fmtMoney(t.savingsCents)}/mo</strong> (${t.savingsPct}%) vs the competitor stack`
+        : `12² suite costs <strong>${Competitors.fmtMoney(-t.savingsCents)}/mo more</strong> — justify with bundled scope`}
+    </div>
+    <div class="comp-bars">${bar('Competitors', stack, 'fill-stack')}${bar('12² suite', suite, 'fill-suite')}</div>
+    <div class="sub comp-hero-foot">Stack = one product per category (no double-count).${altNote}${quoteNote}</div>
+  </div>`;
 }
 
 /* ---- boot ---------------------------------------------------------------- */

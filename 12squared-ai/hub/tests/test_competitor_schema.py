@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 
 DATA = Path(__file__).resolve().parent.parent / "data" / "competitor_pricing.json"
-SEAT_MODELS = {"PER_SEAT", "FLAT_SEAT_CAP", "FLAT_CONCURRENCY", "QUOTE_ONLY", "OWN"}
+SEAT_MODELS = {"PER_SEAT", "FLAT_SEAT_CAP", "FLAT_CONCURRENCY", "FLAT_ANNUAL", "QUOTE_ONLY", "OWN"}
 CONFIDENCE = {"verified", "archive", "quote", "internal"}
 CATEGORIES = {"photo_docs", "hail_data", "code_reports"}
 
@@ -48,6 +48,12 @@ class TestCompetitorSchema(unittest.TestCase):
             if tier["quoteOnly"]:
                 self.assertIsNone(tier["monthlyCents"], f"{vendor['id']}/{tier['name']}")
                 self.assertIsNone(tier["annualTotalCents"], f"{vendor['id']}/{tier['name']}")
+
+    def test_not_both_monthly_and_annual_set(self):
+        """A tier prices EITHER per-month OR as an annual total, never both."""
+        for vendor, tier in _iter_tiers(self.doc):
+            if tier["monthlyCents"] is not None and tier["annualTotalCents"] is not None:
+                self.fail(f"{vendor['id']}/{tier['name']} sets both monthlyCents and annualTotalCents")
 
     def test_money_is_int_cents(self):
         for vendor, tier in _iter_tiers(self.doc):
