@@ -309,10 +309,17 @@ def get_local_adoptions(state_abbr: str | None, fips_list: list | None = None,
                         token: str | None = None) -> list:
     if not state_abbr:
         return []
-    params = {"select": "*", "state_abbr": f"eq.{state_abbr.strip().upper()}"}
     fips = [f for f in (fips_list or []) if f]
-    if fips:
-        params["fips"] = f"in.({','.join(fips)})"
+    # No resolved county/place FIPS => there is no specific local jurisdiction to
+    # report, so return []. Querying without a fips filter would dump EVERY local
+    # adoption in the state (PostgREST caps the response at 1000 rows), which
+    # surfaced to users as "hundreds of jurisdictions" with no way to tell which
+    # one governs their address. A real local jurisdiction only exists once
+    # geocoding resolves a county/place FIPS.
+    if not fips:
+        return []
+    params = {"select": "*", "state_abbr": f"eq.{state_abbr.strip().upper()}",
+              "fips": f"in.({','.join(fips)})"}
     return _req("GET", "cm_local_adoptions", params, token=token) or []
 
 
