@@ -264,8 +264,11 @@ def _teaser_payload(full: dict) -> dict:
             t = str(row.get("requirement") or "").split(":", 1)[0].strip()
             if t:
                 titles.append(t)
-        # no code/edition on the public surface — the adopted code is gated
-        preview = {"count": preview.get("count", 0), "example_titles": titles}
+        # no code/edition on the public surface — the adopted code is gated. The
+        # home_rule boolean is gating-safe (no edition/posture text) and lets the
+        # public teaser stay honest when a state names no statewide edition.
+        preview = {"count": preview.get("count", 0), "example_titles": titles,
+                   "home_rule": bool(preview.get("home_rule"))}
     hz = full.get("hazards") or {}
     climate = hz.get("climate_zone") if isinstance(hz, dict) else None
     return {
@@ -290,16 +293,18 @@ _REPORT_JOB_TTL = 24 * 3600  # seconds; finished jobs + PDFs evicted after this
 
 
 def _prune_report_jobs() -> None:
-    """Evict completed/errored jobs older than the TTL and delete their PDFs.
-    Caller must hold _report_jobs_lock. Keeps memory and data/cm_pdfs bounded."""
+    """Evict completed/errored jobs from the in-memory map after the TTL.
+
+    The on-disk PDF is KEPT — `data/cm_pdfs/` is a durable cache, not a temp dir.
+    The file route re-authorizes any pruned job via its persisted cm_reports row
+    and, if the cached file is ever gone (restart, prune, or a fresh box), it
+    REGENERATES the PDF from the durable report data. So a report's PDF is
+    available to the user at all times; only the in-memory bookkeeping is bounded.
+    Caller must hold _report_jobs_lock."""
     cutoff = time.time() - _REPORT_JOB_TTL
     for jid, j in list(_report_jobs.items()):
         if j.get("status") in ("ready", "error") and j.get("created_at", 0) < cutoff:
             _report_jobs.pop(jid, None)
-            try:
-                (CM_PDF_DIR / f"{jid}.pdf").unlink(missing_ok=True)
-            except OSError:
-                pass
 
 
 _REPORT_ID_RE = re.compile(r"^[0-9a-fA-F-]{8,}$")
@@ -313,17 +318,31 @@ def _parse_code_cycle(text: str | None) -> tuple[str | None, str | None]:
 
 
 def _suggest_cycle(adoption: dict | None) -> tuple[str | None, str | None, str | None]:
-    """(code, edition, label) from a cm_state_adoptions row; residential first."""
-    if not adoption:
-        return None, None, None
-    for code_field, ed_field in (("residential_code", "residential_edition"),
-                                 ("commercial_code", "commercial_edition")):
-        cm = re.search(r"\b(IRC|IBC)\b", adoption.get(code_field) or "", re.I)
-        ym = re.search(r"(\d{4})", str(adoption.get(ed_field) or ""))
-        if cm and ym:
-            code, edition = cm.group(1).upper(), ym.group(1)
-            return code, edition, f"{code} {edition}"
-    return None, None, None
+    """(code, edition, label) from a cm_state_adoptions row; residential first.
+
+    Delegates to cmlibrary.suggest_cycle so resolve, report-create, and PDF render
+    all derive the cycle (and detect home-rule) from one source of truth.
+    """
+    return cmlibrary.suggest_cycle(adoption)
+
+
+def _best_local(locals_: list[dict], stack: dict) -> dict | None:
+    """Most-specific local adoption for the resolved address: an exact place-FIPS
+    match wins over a county-FIPS match. get_local_adoptions already filtered to
+    the resolved state + (county_fips, place_fips), so these are candidates only.
+    Verified (Tier-3) rows are preferred over BCAT-reported (Tier-2) at the same
+    level so human curation always overrides the machine import."""
+    pf, cf = stack.get("place_fips"), stack.get("county_fips")
+
+    def _pick(rows: list[dict]) -> dict | None:
+        if not rows:
+            return None
+        return sorted(rows, key=lambda r: r.get("status") == "verified", reverse=True)[0]
+
+    place = _pick([r for r in locals_ if r.get("level") == "place" and pf and r.get("fips") == pf])
+    if place:
+        return place
+    return _pick([r for r in locals_ if r.get("level") == "county" and cf and r.get("fips") == cf])
 
 
 def _resolve_lookup(body: dict, token: str | None) -> dict:
@@ -347,7 +366,16 @@ def _resolve_lookup(body: dict, token: str | None) -> dict:
         except (cmdata.CMNotConfigured, cmdata.CMError) as e:
             adoption_error = str(e)
 
+    # Prefer a matched LOCAL adoption (place > county) over the state baseline.
+    # This is what makes per-jurisdiction requirements resolve — e.g. a Dallas TX
+    # address now yields the city's BCAT-reported IRC/IBC edition instead of the
+    # "no statewide edition" home-rule fallback.
+    local_match = _best_local(locals_, stack)
     code, edition, cycle = _suggest_cycle(adoption)
+    if local_match:
+        lc, le, lcyc = cmlibrary.suggest_cycle(local_match)
+        if lc and le:
+            code, edition, cycle = lc, le, lcyc
 
     # Site hazard profile (climate zone embed, seismic via USGS, wind/snow
     # link-out per the research matrix). hazards_for never raises; the guard
@@ -388,6 +416,32 @@ def _resolve_lookup(body: dict, token: str | None) -> dict:
         preview = {"count": len(rows), "code": code, "edition": edition,
                    "code_source": rows[0]["code_source"] if rows else cycle,
                    "sample": rows[:6]}
+        if local_match:
+            # Provenance for the matched jurisdiction (court-admissibility: cite
+            # the source + tier; never label a BCAT-reported row 'verified').
+            preview["jurisdiction_name"] = local_match.get("name")
+            preview["jurisdiction_level"] = local_match.get("level")
+            preview["jurisdiction_tier"] = ("verified"
+                                            if local_match.get("status") == "verified"
+                                            else "bcat_reported")
+            preview["jurisdiction_sources"] = local_match.get("sources") or []
+
+    # Home-rule / no statewide adopted edition: we cannot cite an adopted code
+    # edition for this address, and presenting an unadopted model edition as law
+    # would be inaccurate and legally unsafe (legal_posture.md §1.1). Never leave
+    # the lookup silently empty — fall back to the enacted, nationwide federal
+    # layer (CFR-cited) plus an honest notice that the AHJ sets the edition.
+    if preview is None and stack.get("state_abbr"):
+        fed = cmlibrary.federal_requirements(None)
+        preview = {
+            "count": len(fed),
+            "code": None,
+            "edition": None,
+            "home_rule": True,
+            "notice": cmlibrary.home_rule_notice(stack.get("state_name"), adoption),
+            "code_source": "Federal",
+            "sample": fed[:6],
+        }
 
     # research-provenance `sources` arrays stay internal — never in the public API
     adoption_public = {k: v for k, v in adoption.items() if k != "sources"} if adoption else None
@@ -497,14 +551,31 @@ def _create_report(body: dict, token: str | None, caller=None) -> dict:
             trade_ids, building_cycle=(code, edition),
             resolve_discipline=lambda disc: cmadoption.resolve(disc, stack, token=token))
         all_rows, errors = [], {}
+        had_cycle = False
         for tid, p in plan.items():
             if not (p["code"] and p["edition"]):
                 errors[tid] = "edition adopted per AHJ — confirm locally"
                 continue
+            had_cycle = True
             try:
                 all_rows.extend(cmlibrary.requirements_for(tid, p["code"], p["edition"]))
             except (LookupError, OSError, ValueError) as e:
                 errors[tid] = str(e)
+        # Home-rule jurisdiction: no trade resolved a citeable statewide edition.
+        # Seed the enacted federal layer so the deliverable is never empty. The
+        # honest "no statewide edition" notice is generated at PDF-render time
+        # (cmreport detects home rule from the adoption row), so nothing unsafe is
+        # persisted onto the text `jurisdiction` field.
+        home_rule = not had_cycle and bool(stack.get("state_abbr"))
+        if home_rule:
+            all_rows.extend(cmlibrary.federal_requirements(None))
+            try:
+                hr_adoption = cmdata.get_state_adoption(stack["state_abbr"], token)
+            except Exception:
+                hr_adoption = None
+            report["home_rule"] = True
+            report["home_rule_notice"] = cmlibrary.home_rule_notice(
+                stack.get("state_name"), hr_adoption)
         inserted = cmdata.add_requirements(report["id"], all_rows, token, caller=caller) if all_rows else []
         report["auto_populated"] = len(inserted)
         if errors:
@@ -969,16 +1040,25 @@ class Handler(BaseHTTPRequestHandler):
                     j = _report_jobs.get(jid)
                 if j and j.get("status") == "ready":
                     self._send_file(CM_PDF_DIR / f"{jid}.pdf", j.get("filename") or f"ol-report-{jid}.pdf", "application/pdf"); return
-                # In-memory job gone (server restart / TTL eviction) but the PDF
-                # may still exist on disk: re-authorize via the org-scoped report
-                # row that recorded this job_id, so deliverable links stay alive.
-                if jid and _REPORT_ID_RE.match(jid) and (CM_PDF_DIR / f"{jid}.pdf").exists():
+                # In-memory job gone (restart / TTL eviction) and/or the cached
+                # PDF was pruned or lost (e.g. the box was rebuilt). Re-authorize
+                # via the org-scoped cm_reports row that recorded this job_id,
+                # then serve the cached file if present — else REGENERATE it from
+                # the durable report data and re-cache. A report's PDF is thus
+                # available at all times, independent of any one machine's disk.
+                if jid and _REPORT_ID_RE.match(jid):
                     rows = cmdata._req("GET", "cm_reports",
                                        {"select": "id", "job_id": f"eq.{jid}", "limit": "1",
                                         **cmdata._org_params(self._caller())},
                                        token=self._bearer()) or []
                     if rows:
-                        self._send_file(CM_PDF_DIR / f"{jid}.pdf", f"ol-report-{jid}.pdf", "application/pdf"); return
+                        pdf_path = CM_PDF_DIR / f"{jid}.pdf"
+                        if not pdf_path.exists():
+                            import cmreport
+                            CM_PDF_DIR.mkdir(parents=True, exist_ok=True)
+                            cmreport.render_cm_report(rows[0]["id"], pdf_path,
+                                                      token=self._bearer(), caller=self._caller())
+                        self._send_file(pdf_path, f"ol-report-{jid}.pdf", "application/pdf"); return
                 self._send_json(404, {"error": "not ready"}); return
             self._send_json(404, {"error": "not found"})
         except cmdata.CMNotConfigured as e:
