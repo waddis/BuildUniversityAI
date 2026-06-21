@@ -54,6 +54,7 @@ import hazards  # noqa: E402
 import jurisdiction  # noqa: E402
 import minimap  # noqa: E402
 import provision  # noqa: E402
+import trades  # noqa: E402
 
 DASHBOARD = Path(__file__).resolve().parent.parent / "dashboard"
 TEMPLATE = DASHBOARD / "template.html"
@@ -392,9 +393,48 @@ def _resolve_lookup(body: dict, token: str | None) -> dict:
     adoption_public = {k: v for k, v in adoption.items() if k != "sources"} if adoption else None
     locals_public = [{k: v for k, v in row.items() if k != "sources"} for row in locals_]
 
+    # Per-trade preview: when the caller names trades, resolve each trade's
+    # adopted code/edition (building trades reuse the cycle above; others go
+    # through cmadoption per discipline) and attach a tiny count+sample preview.
+    # Back-compat: only added when `trades` is present in the body.
+    trade_ids = body.get("trades") or []
+    trade_previews = None
+    if trade_ids:
+        import cmadoption
+        plan = _trade_build_plan(
+            trade_ids, building_cycle=(code, edition),
+            resolve_discipline=lambda disc: cmadoption.resolve(disc, stack, token=token))
+        trade_previews = []
+        for tid in trade_ids:
+            p = plan.get(tid)
+            if p is None:  # unknown trade id — skipped by _trade_build_plan
+                continue
+            t_code, t_edition = p.get("code"), p.get("edition")
+            ahj_confirm = bool(p.get("ahj_confirm"))
+            count, sample = 0, []
+            if t_code and t_edition:
+                try:
+                    t_rows = cmlibrary.requirements_for(tid, t_code, t_edition)
+                    count = len(t_rows)
+                    sample = [r.get("section") for r in t_rows[:3]]
+                except (LookupError, OSError, ValueError):
+                    ahj_confirm = True
+            else:
+                ahj_confirm = True
+            trade_previews.append({
+                "trade": tid,
+                "label": trades.trade(tid)["label"],
+                "code": t_code,
+                "edition": t_edition,
+                "count": count,
+                "sample": sample,
+                "ahj_confirm": ahj_confirm,
+                "confidence": p.get("confidence"),
+            })
+
     juris_name = ", ".join(filter(None, [
         stack.get("place_name"), stack.get("county_name"), stack.get("state_name")])) or None
-    return {
+    result = {
         "jurisdiction": stack,
         "state_adoption": adoption_public,
         "local_adoptions": locals_public,
@@ -405,6 +445,9 @@ def _resolve_lookup(body: dict, token: str | None) -> dict:
         "disclaimers": cmlibrary.render_disclaimers(
             (adoption or {}).get("verified_at"), juris_name),
     }
+    if trade_previews is not None:
+        result["trade_previews"] = trade_previews
+    return result
 
 
 def _trade_build_plan(trade_ids: list[str], building_cycle: tuple,
@@ -880,6 +923,14 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {"ok": True, "service": "codesandmore"}); return
         if path == "/api/public/coverage":
             self.handle_public_coverage(); return
+        if path == "/api/cm/trades":
+            # Static trade catalog for the report-create picker — no auth (it
+            # exposes only id/label/discipline, never internal fields).
+            self._cc = None; self.user_claims = None
+            self._send_json(200, {"trades": [
+                {"id": t["id"], "label": t["label"], "discipline": t["discipline"]}
+                for t in trades.TRADES]},
+                cache_control="public, max-age=300"); return
         if path.startswith("/api/") and not self._authenticate():
             return
         if path == "/api/me":
