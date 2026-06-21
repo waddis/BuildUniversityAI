@@ -34,6 +34,15 @@ VINTAGE = "Current_Current"
 LAYERS = "States,Counties,County Subdivisions,Incorporated Places,Census Designated Places"
 TIMEOUT = 10  # seconds
 
+# Datacenter-friendly geocoding fallback. The Census geocoder's WAF rejects
+# cloud/datacenter IPs (returns an HTML "Request Rejected" page), so on the VPS
+# we resolve via Nominatim (OSM, address -> lat/lon) + the FCC Census Area API
+# (lat/lon -> county FIPS). County-level, address-derived (precise); no
+# incorporated-place FIPS is available from these sources.
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+FCC_AREA_URL = "https://geo.fcc.gov/api/census/area"
+GEO_UA = "codesandmore/1.0 (+https://buildingcodes.app)"
+
 STATE_NAMES = {
     "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
     "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
@@ -204,6 +213,47 @@ def _census_geocode(address: str) -> dict | None:
     return out
 
 
+def _nominatim_fcc_geocode(address: str) -> dict | None:
+    """Address -> county jurisdiction via Nominatim (OSM) + the FCC Census Area
+    API. Datacenter-friendly fallback for the WAF-blocked Census geocoder.
+    Resolves to county-level (address-derived, precise); the city name is carried
+    for transparency but no authoritative incorporated-place FIPS is available
+    from these sources, so place_fips stays null."""
+    qs = urllib.parse.urlencode({"q": address, "format": "json", "limit": 1,
+                                 "addressdetails": 1})
+    nom = _http_json(f"{NOMINATIM_URL}?{qs}", headers={"User-Agent": GEO_UA})
+    if not nom or not isinstance(nom, list):
+        return None
+    top = nom[0]
+    try:
+        lat, lon = float(top.get("lat")), float(top.get("lon"))
+    except (TypeError, ValueError):
+        return None
+    fcc = _http_json(f"{FCC_AREA_URL}?{urllib.parse.urlencode({'lat': lat, 'lon': lon, 'format': 'json'})}")
+    results = (fcc or {}).get("results") or []
+    if not results:
+        return None
+    r = results[0]
+    county_fips = str(r.get("county_fips") or "")
+    if len(county_fips) != 5:
+        return None
+    abbr = (r.get("state_code") or "").upper() or None
+    addr = top.get("address") or {}
+    out = _empty_result()
+    out["resolution_method"] = "nominatim_fcc"
+    out["state_abbr"] = abbr
+    out["state_name"] = STATE_NAMES.get(abbr or "") or r.get("state_name")
+    out["county_fips"] = county_fips
+    out["county_name"] = r.get("county_name")
+    out["lat"], out["lon"] = lat, lon
+    # OSM locality name for transparency only — never an authoritative place FIPS.
+    out["place_name"] = (addr.get("city") or addr.get("town")
+                         or addr.get("village") or addr.get("hamlet"))
+    out["place_type"] = "osm_locality" if out["place_name"] else None
+    out["unincorporated"] = False
+    return out
+
+
 def _hud_zip_county(zip5: str) -> dict | None:
     """HUD-USPS zip-county crosswalk (type 2). Needs HUD_API_TOKEN; else None."""
     token = os.environ.get("HUD_API_TOKEN", "").strip()
@@ -297,7 +347,10 @@ def resolve(address: str | None = None, zip5: str | None = None) -> dict:
         zip5 = _extract_zip(address)
 
     if address:
-        result = _census_geocode(address)
+        result = _census_geocode(address)        # residential IPs (dev Mac)
+        if result:
+            return result
+        result = _nominatim_fcc_geocode(address)  # datacenter fallback (prod VPS)
         if result:
             return result
 

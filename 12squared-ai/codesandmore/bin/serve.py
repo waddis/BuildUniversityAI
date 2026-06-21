@@ -265,10 +265,12 @@ def _teaser_payload(full: dict) -> dict:
             if t:
                 titles.append(t)
         # no code/edition on the public surface — the adopted code is gated. The
-        # home_rule boolean is gating-safe (no edition/posture text) and lets the
-        # public teaser stay honest when a state names no statewide edition.
+        # home_rule / needs_address booleans are gating-safe (no edition/posture
+        # text) and keep the public teaser honest about why no code is shown.
         preview = {"count": preview.get("count", 0), "example_titles": titles,
-                   "home_rule": bool(preview.get("home_rule"))}
+                   "home_rule": bool(preview.get("home_rule")),
+                   "needs_address": bool(preview.get("needs_address")),
+                   "notice": preview.get("notice") if preview.get("needs_address") else None}
     hz = full.get("hazards") or {}
     climate = hz.get("climate_zone") if isinstance(hz, dict) else None
     return {
@@ -377,6 +379,18 @@ def _resolve_lookup(body: dict, token: str | None) -> dict:
         if lc and le:
             code, edition, cycle = lc, le, lcyc
 
+    # Require a full street address. Only a real street-address geocode
+    # (census_geocoder) identifies the governing AHJ. A bare ZIP resolves a
+    # county_fips via the ZCTA/HUD crosswalk, but one ZIP can span multiple
+    # jurisdictions whose adopted editions differ — so a crosswalk county does
+    # NOT establish an AHJ. Rather than guess a jurisdiction's code, we signal
+    # needs_address downstream and show no edition/requirements (William
+    # 2026-06-21; court-admissibility).
+    has_ahj = stack.get("resolution_method") in ("census_geocoder", "nominatim_fcc")
+    if not has_ahj:
+        code = edition = cycle = None
+        local_match = None
+
     # Site hazard profile (climate zone embed, seismic via USGS, wind/snow
     # link-out per the research matrix). hazards_for never raises; the guard
     # keeps the resolver alive even if the hazard layer itself breaks. Run it
@@ -426,12 +440,24 @@ def _resolve_lookup(body: dict, token: str | None) -> dict:
                                             else "bcat_reported")
             preview["jurisdiction_sources"] = local_match.get("sources") or []
 
-    # Home-rule / no statewide adopted edition: we cannot cite an adopted code
-    # edition for this address, and presenting an unadopted model edition as law
-    # would be inaccurate and legally unsafe (legal_posture.md §1.1). Never leave
-    # the lookup silently empty — fall back to the enacted, nationwide federal
-    # layer (CFR-cited) plus an honest notice that the AHJ sets the edition.
-    if preview is None and stack.get("state_abbr"):
+    # No AHJ resolved (bare ZIP / un-geocoded address): require a full street
+    # address rather than guess. Takes priority over the home-rule fallback.
+    if preview is None and not has_ahj:
+        preview = {
+            "count": 0,
+            "needs_address": True,
+            "notice": ("Enter a full street address to determine the governing "
+                       "jurisdiction and its adopted building-code edition. A ZIP "
+                       "code alone can span multiple jurisdictions whose adopted "
+                       "codes differ, so we don't report a code from a ZIP alone."),
+        }
+
+    # Home-rule / no statewide adopted edition: we resolved an AHJ but cannot cite
+    # an adopted code edition for it, and presenting an unadopted model edition as
+    # law would be inaccurate and legally unsafe (legal_posture.md §1.1). Never
+    # leave the lookup silently empty — fall back to the enacted, nationwide
+    # federal layer (CFR-cited) plus an honest notice that the AHJ sets the edition.
+    elif preview is None and stack.get("state_abbr"):
         fed = cmlibrary.federal_requirements(None)
         preview = {
             "count": len(fed),
