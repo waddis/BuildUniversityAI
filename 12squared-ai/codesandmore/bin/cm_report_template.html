@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Codes&More — Ordinance-or-Law Report</title>
+<!--
+  Codes&More — Ordinance-or-Law requirements report (print template).
+  Rendered by pdf.py: the renderer replaces the marker below with
+      <script>window.HAIL_PDF_DATA = { ...report data... };</script>
+  then waits for window.__PDF_READY__ === true before printing.
+
+  Branding: 12² AI / Codes&More. Print-light — white background, #3d6fd4
+  accents (no dark cover strip in print). Footer disclaimers (from
+  cmlibrary.LIBRARY_DISCLAIMERS, substituted by cmreport.py) repeat on every
+  page via the fixed-footer + tfoot-spacer pattern.
+-->
+<style>
+  @page { size: letter; margin: 0.6in 0.7in 0.45in; }
+  * { box-sizing: border-box; }
+  body { font: 11.5px/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif; color: #1a1d23; margin: 0; background: #fff; }
+  /* long source URLs (PNNL/USGS/ASCE) must wrap, or the canvas grows wider than
+     the letter page and every table's right edge clips off the printed page */
+  td, th, .kv, .src { overflow-wrap: anywhere; word-break: break-word; }
+  table.req { table-layout: fixed; }
+  table.layout { width: 100%; border-collapse: collapse; }
+  table.layout > tbody > tr > td, table.layout > tfoot > tr > td { padding: 0; border: 0; }
+  .footspace { height: 128px; }
+
+  /* ---- drawing-sheet layer (Living Blueprint §6) ---- */
+  /* Sheet 1 = the cover. min-height pins the title block to the bottom of the
+     first page when the cover is short; if cover content ever runs long the
+     wrapper simply grows and the title block follows it (never overlaps). */
+  .sheet1 { position: relative; min-height: 818px; padding-bottom: 84px; page-break-after: always; }
+  .sheet1 .titleblock { position: absolute; bottom: 0; left: 0; right: 0; }
+
+  /* title block strip — bordered cells, mono labels over values */
+  table.titleblock { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.titleblock td { border: 1px solid #c9ced8; padding: 6px 9px 7px; vertical-align: top; }
+  table.titleblock .tb-wide { width: 32%; }
+  table.titleblock .tb-seal { width: 78px; text-align: center; padding: 5px 4px 4px; }
+  .tbl { display: block; font: 600 6.5px/1.3 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+         letter-spacing: .08em; text-transform: uppercase; color: #8b94a3; margin-bottom: 3px; }
+  .tbv { display: block; font-size: 9px; line-height: 1.35; color: #1a1d23; }
+  .tbmono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: .03em; }
+
+  /* stamp seals — single-color ink, 85% opacity, slight rotation (rubber stamp) */
+  .seal { opacity: .85; }
+  .jval .seal { vertical-align: -7px; margin-left: 5px; }
+  .bt .seal { flex: 0 0 auto; }
+
+  /* requirement matrix (cover): counts by category × trigger; zeros render "·" */
+  .matrixwrap { margin: 12px 0 2px; }
+  .matrixcap { font: 600 7px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+               letter-spacing: .07em; color: #8b94a3; margin-bottom: 4px; }
+  table.matrix { width: 100%; border-collapse: collapse; }
+  table.matrix th, table.matrix td { border: 1px solid #e3e8f0; font-size: 9px; padding: 4px 8px; text-align: center; }
+  table.matrix thead th { background: #f0f3f9; text-transform: uppercase; font-size: 7.5px; letter-spacing: .05em; color: #444; }
+  table.matrix tbody th { text-align: left; font-size: 8.5px; text-transform: uppercase; letter-spacing: .04em;
+                          color: #444; background: #f7f9fc; font-weight: 600; }
+  table.matrix td.hit { background: #e7ecf7; color: #2c4a9a; font-weight: 700; font-variant-numeric: tabular-nums; }
+  table.matrix td.z { color: #b6bcc8; }
+
+  /* datasets margin annotation (page footer, mono) — real values only */
+  .pagefooter .fdatasets { font: 600 6.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+                           letter-spacing: .05em; color: #8b94a3; margin-bottom: 2px; }
+
+  /* brandmark header */
+  .brandbar { display: flex; align-items: baseline; gap: 10px; padding-bottom: 10px; border-bottom: 3px solid #3d6fd4; margin-bottom: 16px; }
+  .brandmark { font-size: 17px; font-weight: 800; letter-spacing: .2px; color: #1a1d23; }
+  .brandmark sup { font-size: 10px; }
+  .brandsep { color: #c6cfdd; font-weight: 300; font-size: 17px; }
+  .product { font-size: 15px; font-weight: 700; color: #3d6fd4; letter-spacing: .3px; }
+  .brandtag { margin-left: auto; font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: #8b94a3; }
+
+  h1 { font-size: 21px; margin: 4px 0 2px; color: #1a1d23; }
+  h2 { font-size: 13px; margin: 22px 0 4px; color: #3d6fd4; text-transform: uppercase; letter-spacing: .8px;
+       border-bottom: 1px solid #e3e8f0; padding-bottom: 4px; }
+  .meta { color: #555; font-size: 10.5px; margin-bottom: 4px; }
+  .addr { font-size: 14px; font-weight: 600; margin-top: 6px; }
+  .summary { background: #f5f7fb; border: 1px solid #e3e8f0; border-left: 3px solid #3d6fd4; border-radius: 6px; padding: 11px 12px; margin: 14px 0; }
+
+  /* cover: jurisdiction stack + adopted codes */
+  .cover { display: flex; gap: 14px; margin: 14px 0 4px; }
+  .coverbox { flex: 1; border: 1px solid #e3e8f0; border-radius: 8px; overflow: hidden;
+    /* blueprint graph-paper grid, print-safe alpha (§6.6 — drop if it muds) */
+    background-image:
+      linear-gradient(rgba(28,47,94,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(28,47,94,.03) 1px, transparent 1px),
+      linear-gradient(rgba(28,47,94,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(28,47,94,.045) 1px, transparent 1px);
+    background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px; }
+  /* dimension-line box titles: hairline + end ticks, centered mono label */
+  .coverbox .bt { display: flex; align-items: center; gap: 8px; background: transparent;
+    border-bottom: 0; color: #5a6372; font: 700 8px/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    text-transform: uppercase; letter-spacing: .09em; padding: 8px 10px 5px; }
+  .bt::before, .bt::after { content: ""; flex: 1; height: 7px;
+    background: linear-gradient(to bottom, transparent 3px, #c9ced8 3px, #c9ced8 4px, transparent 4px); }
+  .bt::before { border-left: 1px solid #aab2c0; }
+  .bt::after { border-right: 1px solid #aab2c0; }
+  .jrow { display: flex; gap: 10px; padding: 5px 10px; border-bottom: 1px solid #eef1f6; font-size: 10.5px; }
+  .jrow:last-child { border-bottom: 0; }
+  .jlvl { flex: 0 0 86px; color: #8b94a3; text-transform: uppercase; font-size: 8.5px; letter-spacing: .6px; padding-top: 2px; }
+  .jval { color: #1a1d23; }
+  .badge { display: inline-block; font-size: 8.5px; padding: 0 6px; border-radius: 99px; border: 1px solid #ccc; color: #666; margin-left: 6px; vertical-align: 1px; }
+  .badge.ok { color: #1f7a43; border-color: #bfe3cd; background: #f0faf4; }
+  .badge.mid { color: #6e5a1e; border-color: #e0d5ae; background: #fbf8ee; }
+  .badge.warn { color: #8a5a12; border-color: #ecd3a2; background: #fdf6e8; }
+
+  /* cover mini-map (Site & Jurisdiction) — server-generated boundary SVG.
+     The box is only emitted when D.minimap_svg exists; the two-box cover
+     layout is unchanged when it is absent. */
+  .coverbox.mapbox { flex: 0 0 188px; }
+  .mapwrap { padding: 6px 8px 0; }
+  .mapwrap svg { display: block; width: 100%; height: auto; }
+  .mapcap { padding: 0 10px 7px; font-size: 7.5px; line-height: 1.4; color: #8b94a3;
+            text-transform: uppercase; letter-spacing: .5px; }
+
+  /* site hazard profile (climate zone / seismic embeds, wind/snow link-outs) */
+  .hazardbox { border: 1px solid #e3e8f0; border-radius: 8px; overflow: hidden; margin: 0 0 4px; }
+  .hazardbox .bt { display: flex; align-items: center; gap: 8px; background: transparent;
+    border-bottom: 0; color: #5a6372; font: 700 8px/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    text-transform: uppercase; letter-spacing: .09em; padding: 8px 10px 5px; }
+  .hsrc { display: block; color: #8b94a3; font-size: 8.5px; margin-top: 1px; }
+  .hlink { color: #3d6fd4; }
+
+  table.req { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.req th, table.req td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid #e3e8f0; font-size: 10.5px; }
+  table.req th { background: #f0f3f9; color: #444; text-transform: uppercase; font-size: 9px; letter-spacing: .4px; }
+  table.req tr { page-break-inside: avoid; }
+  .cite { font-weight: 600; color: #3d6fd4; white-space: nowrap; }
+  .notes { color: #888; font-size: 9.5px; margin-top: 2px; }
+  .none { color: #777; font-size: 10.5px; margin: 4px 0; }
+
+  /* per-trade section header — trade label + adopted code source, mono code */
+  .tradehead { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    margin: 18px 0 0; padding-bottom: 3px; border-bottom: 1px solid #e3e8f0; }
+  .tradehead h2 { border: 0; margin: 0; padding: 0; }
+  .tradehead .tsrc { font: 600 8.5px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    letter-spacing: .04em; color: #5a6372; text-transform: none; }
+  .tradehead .tahj { font-size: 8.5px; color: #8a5a12; }
+
+  /* Sources & Citations page — starts on a fresh sheet */
+  .citepage { page-break-before: always; }
+  .citelead { color: #555; font-size: 10.5px; margin: 6px 0 10px; }
+  table.cites { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 6px; }
+  table.cites th, table.cites td { text-align: left; vertical-align: top; padding: 6px 8px;
+    border-bottom: 1px solid #e3e8f0; font-size: 10px; }
+  table.cites th { background: #f0f3f9; color: #444; text-transform: uppercase; font-size: 9px; letter-spacing: .4px; }
+  table.cites tr { page-break-inside: avoid; }
+  .src { font-size: 9.5px; color: #3d6fd4; }
+
+  /* repeating page footer (disclaimers) */
+  .pagefooter { position: fixed; bottom: 0; left: 0; right: 0; height: 122px;
+    border-top: 1px solid #e3e8f0; padding-top: 5px; background: #fff;
+    font-size: 6.6px; line-height: 1.35; color: #777; }
+  .pagefooter .fbrand { font-size: 7px; font-weight: 700; color: #3d6fd4; margin-bottom: 2px; }
+  .pagefooter p { margin: 0 0 2px; }
+</style>
+</head>
+<body>
+<table class="layout">
+  <tbody><tr><td><div id="doc"></div></td></tr></tbody>
+  <tfoot><tr><td><div class="footspace"></div></td></tr></tfoot>
+</table>
+<div class="pagefooter" id="pagefooter"></div>
+<!--HAIL_DATA_INJECTION_POINT-->
+<script>
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+  function money(c){ return c==null ? '' : '$' + (c/100).toLocaleString(undefined,{minimumFractionDigits:0}); }
+  function confBadge(conf, verified){
+    var v = verified ? ' · verified ' + esc(String(verified).slice(0,10)) : '';
+    if (conf === 'high')
+      return '<span class="badge ok">high confidence' + v + '</span>';
+    if (conf === 'medium')
+      return '<span class="badge mid">medium confidence — verify edition with AHJ' + v + '</span>';
+    return '<span class="badge warn">confirm with AHJ' + (conf ? ' · ' + esc(conf) + ' confidence' : '') + v + '</span>';
+  }
+  // Rubber-stamp seal (Living Blueprint §1.4 / §6.4). Two kinds:
+  //   'verified' — VERIFIED · {date} ·  circular text, center check, green ink
+  //   'confirm'  — CONFIRM WITH AHJ ·   circular text, center asterisk, amber ink
+  // size 56 = full seal with circular text; size <= 24 = ring + glyph only.
+  // Single-color ink, 85% opacity (CSS), slight rotation. The date is always
+  // the row's real verified_at — never "today".
+  var SEAL_N = 0;
+  function sealSVG(kind, date, size){
+    SEAL_N++;
+    var ok = kind === 'verified';
+    var ink = ok ? '#1f7a43' : '#8a5a12';
+    var rot = ok ? -6 : -4;
+    var glyph = ok
+      ? '<path d="M20.5 28.5l5.2 5.2L35.8 23" fill="none" stroke="' + ink + '" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'
+      : '<g stroke="' + ink + '" stroke-width="2.1" stroke-linecap="round" fill="none">' +
+        '<path d="M28 21.5v13M22.4 24.7l11.2 6.6M22.4 31.3l11.2-6.6"/></g>';
+    if (size <= 24)
+      return '<svg class="seal" width="' + size + '" height="' + size + '" viewBox="0 0 56 56"' +
+        ' aria-hidden="true" style="transform:rotate(' + rot + 'deg)">' +
+        '<circle cx="28" cy="28" r="25" fill="none" stroke="' + ink + '" stroke-width="2.4"/>' +
+        glyph + '</svg>';
+    var d10 = esc(String(date || '').slice(0, 10));
+    var label = ok ? ('VERIFIED · ' + d10 + ' · ') : 'CONFIRM WITH AHJ · ';
+    var pid = 'sealp' + SEAL_N;
+    return '<svg class="seal" width="' + size + '" height="' + size + '" viewBox="0 0 56 56" role="img"' +
+      ' aria-label="' + (ok ? 'Verified ' + d10 : 'Confirm with AHJ') + '"' +
+      ' style="transform:rotate(' + rot + 'deg)">' +
+      '<defs><path id="' + pid + '" d="M28 6.5a21.5 21.5 0 1 1 0 43 21.5 21.5 0 1 1 0-43"/></defs>' +
+      '<circle cx="28" cy="28" r="27" fill="none" stroke="' + ink + '" stroke-width="1.4"/>' +
+      '<circle cx="28" cy="28" r="16.5" fill="none" stroke="' + ink + '" stroke-width="0.8"/>' +
+      '<text font-family="ui-monospace,Menlo,Consolas,monospace" font-size="7" font-weight="600"' +
+      ' fill="' + ink + '" textLength="134" lengthAdjust="spacing"><textPath href="#' + pid + '">' +
+      label + '</textPath></text>' + glyph + '</svg>';
+  }
+  // Cover requirement matrix — counts by category × trigger bucket, computed
+  // from the SAME applies!==false rows the body tables print (reconciles by
+  // construction). Zeros render "·"; populated cells get a navy tint.
+  function reqMatrix(rows){
+    if (!rows.length) return '';
+    var TRIGS = ['replacement', 'recover', 'repair', 'other'];
+    function bucket(t){
+      t = (t || '').toLowerCase();
+      if (t.indexOf('replac') >= 0) return 'replacement';
+      if (t.indexOf('recover') >= 0) return 'recover';
+      if (t.indexOf('repair') >= 0) return 'repair';
+      return 'other';
+    }
+    var byCat = {}, order = [];
+    rows.forEach(function(r){
+      var c = (r.category || 'uncategorized').toLowerCase();
+      if (!byCat[c]){ byCat[c] = {replacement: 0, recover: 0, repair: 0, other: 0, total: 0}; order.push(c); }
+      byCat[c][bucket(r.trigger)]++; byCat[c].total++;
+    });
+    order.sort(function(a, b){ return byCat[b].total - byCat[a].total; });
+    var cats = order.slice(0, 6).map(function(c){ return {label: c, n: byCat[c]}; });
+    var rest = order.slice(6);
+    if (rest.length){
+      var roll = {replacement: 0, recover: 0, repair: 0, other: 0, total: 0};
+      rest.forEach(function(c){ TRIGS.forEach(function(t){ roll[t] += byCat[c][t]; }); roll.total += byCat[c].total; });
+      cats.push({label: 'other (' + rest.length + ' more categories)', n: roll});
+    }
+    var h = '<div class="matrixwrap"><div class="matrixcap">LINE-ITEM MATRIX — COUNTS BY CATEGORY × TRIGGER</div>' +
+            '<table class="matrix"><thead><tr><th></th>';
+    TRIGS.forEach(function(t){ h += '<th>' + t + '</th>'; });
+    h += '</tr></thead><tbody>';
+    cats.forEach(function(c){
+      h += '<tr><th>' + esc(c.label) + '</th>';
+      TRIGS.forEach(function(t){
+        var n = c.n[t];
+        h += n > 0 ? '<td class="hit">' + n + '</td>' : '<td class="z">·</td>';
+      });
+      h += '</tr>';
+    });
+    return h + '</tbody></table></div>';
+  }
+  // Title block strip (drawing-sheet cover bottom). Chromium print can't know
+  // total page count up front and we don't fake it — the sheet cell is the
+  // cover's only sheet number ("Sheet 1 — Cover").
+  function titleBlock(D, A, loc){
+    var dateLabel, dateVal;
+    if (D.created_at){ dateLabel = 'DATE · REPORT CREATED'; dateVal = String(D.created_at).slice(0, 10); }
+    else { dateLabel = 'DATE · RENDERED'; dateVal = String(D.generated_at || '').slice(0, 10); }
+    var seal = (A && A.confidence === 'high' && A.verified_at)
+      ? sealSVG('verified', A.verified_at, 56)
+      : sealSVG('confirm', null, 56);
+    return '<table class="titleblock"><tbody><tr>' +
+      '<td class="tb-wide"><span class="tbl">PROJECT / ADDRESS</span><span class="tbv">' +
+        esc([D.address, loc].filter(Boolean).join(', ') || '—') + '</span></td>' +
+      '<td><span class="tbl">SHEET</span><span class="tbv">Sheet 1 — Cover</span></td>' +
+      '<td><span class="tbl">' + dateLabel + '</span><span class="tbv tbmono">' + esc(dateVal) + '</span></td>' +
+      '<td class="tb-seal"><span class="tbl">ADOPTION</span>' + seal + '</td>' +
+      '<td><span class="tbl">REPORT ID</span><span class="tbv tbmono">' + esc(D.report_id || '') + '</span></td>' +
+      '</tr></tbody></table>';
+  }
+  function reqTable(rows){
+    var h = '<table class="req"><thead><tr><th style="width:13%">Citation</th><th style="width:11%">Category</th>' +
+            '<th>Requirement</th><th style="width:20%">Trigger</th><th style="width:8%">Est. cost</th></tr></thead><tbody>';
+    var total = 0;
+    rows.forEach(function(r){
+      total += r.cost_estimate_cents || 0;
+      h += '<tr>' +
+        '<td class="cite">' + esc(((r.code_source||'') + ' ' + (r.section||'')).trim()) + '</td>' +
+        '<td>' + esc(r.category||'') + '</td>' +
+        '<td>' + esc(r.requirement||'') + (r.notes ? '<div class="notes">' + esc(r.notes) + '</div>' : '') + '</td>' +
+        '<td>' + esc(r.trigger||'') + '</td>' +
+        '<td>' + esc(money(r.cost_estimate_cents)) + '</td>' +
+        '</tr>';
+    });
+    h += '</tbody>';
+    if (total > 0)
+      h += '<tfoot><tr><td colspan="4" style="text-align:right">Total estimated cost (entered line items)</td>' +
+           '<td>' + esc(money(total)) + '</td></tr></tfoot>';
+    return h + '</table>';
+  }
+  // Per-trade sections (Task 12). Iterate D.trade_groups, render a trade header
+  // (label + code_source) then that group's rows through the SAME reqTable
+  // markup. When a group's edition is unknown — code_source missing OR none of
+  // its rows carry an edition — flag "confirm edition with AHJ" in the header.
+  function tradeSections(groups){
+    var out = '';
+    groups.forEach(function(g){
+      var visible = (g.requirements || []).filter(function(r){ return r.applies !== false; });
+      var hasEdition = (g.requirements || []).some(function(r){ return r.edition; });
+      var ahjConfirm = !g.code_source || !hasEdition;
+      out += '<div class="tradehead"><h2>' + esc(g.label || g.trade || 'Requirements') + '</h2>' +
+        (g.code_source ? '<span class="tsrc">' + esc(g.code_source) + '</span>' : '') +
+        (ahjConfirm ? '<span class="tahj">Edition adopted per AHJ — confirm locally</span>' : '') +
+        '</div>';
+      out += visible.length ? reqTable(visible)
+           : '<p class="none">No line items recorded for this trade.</p>';
+    });
+    return out;
+  }
+  // Sources & Citations page (Task 12). One row per de-duplicated citation;
+  // source_url uses the .src wrapping class so long PNNL/USGS/ASCE URLs never
+  // overflow the letter page (see overflow-wrap rule, top of stylesheet).
+  function citationsPage(cites){
+    var h = '<div class="citepage"><h2>Sources &amp; Citations</h2>' +
+      '<p class="citelead">Every requirement above is a paraphrased summary of the cited provision; ' +
+      'the sources below were loaded on the listed verification dates.</p>';
+    if (!cites || !cites.length)
+      return h + '<p class="none">No cited library requirements on this report.</p></div>';
+    h += '<table class="cites"><thead><tr>' +
+      '<th style="width:13%">Code</th><th style="width:12%">Section</th>' +
+      '<th style="width:12%">Edition</th><th style="width:15%">Verified</th>' +
+      '<th style="width:13%">Confidence</th><th>Source</th>' +
+      '</tr></thead><tbody>';
+    cites.forEach(function(c){
+      h += '<tr>' +
+        '<td class="cite">' + esc(c.code_source||'') + '</td>' +
+        '<td>' + esc(c.section||'') + '</td>' +
+        '<td>' + esc(c.edition||'') + '</td>' +
+        '<td>' + (c.verified_at ? 'verified ' + esc(String(c.verified_at).slice(0,10)) : '') + '</td>' +
+        '<td>' + esc(c.confidence||'') + '</td>' +
+        '<td>' + (c.source_url
+          ? '<a class="src" href="' + esc(c.source_url) + '">' + esc(c.source_url) + '</a>'
+          : '') + '</td>' +
+        '</tr>';
+    });
+    return h + '</tbody></table></div>';
+  }
+  function render(){
+    var D = window.HAIL_PDF_DATA || {};
+    var loc = [D.city, D.state].filter(Boolean).join(', ');
+    var rows = (D.requirements || []).filter(function(r){ return r.applies !== false; });
+    var A = D.adoption || null;
+    var body = '';
+
+    // sheet 1 (cover) — drawing-sheet wrapper; title block pins to its bottom
+    body += '<div class="sheet1">';
+
+    // brandmark header
+    body += '<div class="brandbar"><span class="brandmark">12<sup>2</sup> AI</span>' +
+            '<span class="brandsep">/</span><span class="product">Codes&amp;More</span>' +
+            '<span class="brandtag">Ordinance-or-Law Report</span></div>';
+
+    // cover: identification
+    body += '<h1>' + esc(D.report_title || 'Ordinance-or-Law Requirements') + '</h1>';
+    body += '<div class="meta">Report ' + esc(D.report_id||'') +
+            ' · report date ' + esc((D.generated_at||'').slice(0,10)) +
+            (D.verified_at ? ' · adoption data verified ' + esc(String(D.verified_at).slice(0,10)) : '') +
+            (D.source==='jurisdiction_data' ? ' · jurisdiction data' : ' · manually entered') + '</div>';
+    body += '<div class="addr">' + esc(D.address||'') + (loc ? ', ' + esc(loc) : '') + '</div>';
+
+    // cover: jurisdiction stack + adopted codes
+    var stack = '';
+    stack += '<div class="jrow"><span class="jlvl">Federal</span><span class="jval">United States — EPA RRP / OSHA / NFIP overlays</span></div>';
+    stack += '<div class="jrow"><span class="jlvl">State</span><span class="jval">' + esc((A && A.state_name) || D.state || '—') + '</span></div>';
+    stack += '<div class="jrow"><span class="jlvl">Local AHJ</span><span class="jval">' + esc(D.jurisdiction || (D.city ? D.city : '—')) + '</span></div>';
+    var codes = '';
+    if (A) {
+      if (A.residential_code) codes += '<div class="jrow"><span class="jlvl">Residential</span><span class="jval">' + esc((A.residential_code + ' ' + (A.residential_edition||'')).trim()) + '</span></div>';
+      if (A.commercial_code)  codes += '<div class="jrow"><span class="jlvl">Commercial</span><span class="jval">' + esc((A.commercial_code + ' ' + (A.commercial_edition||'')).trim()) + '</span></div>';
+      codes += '<div class="jrow"><span class="jlvl">Status</span><span class="jval">' + esc(A.statewide_mandatory||'') + confBadge(A.confidence, A.verified_at) +
+               sealSVG(A.confidence === 'high' ? 'verified' : 'confirm', A.verified_at, 22) + '</span></div>';
+      if (A.effective_date) codes += '<div class="jrow"><span class="jlvl">Effective</span><span class="jval">' + esc(String(A.effective_date).slice(0,10)) + '</span></div>';
+    }
+    if (D.code_cycle) codes += '<div class="jrow"><span class="jlvl">This report</span><span class="jval">' + esc(D.code_cycle) + '</span></div>';
+    if (!codes) codes = '<div class="jrow"><span class="jlvl">Adopted</span><span class="jval">adoption data unavailable' + confBadge(null, null) + '</span></div>';
+    // Site & Jurisdiction mini-map — D.minimap_svg is generated server-side
+    // by minimap.py (trusted markup, deliberately not escaped). When the map
+    // is unavailable the block collapses and the cover renders as before.
+    var mapbox = '';
+    if (D.minimap_svg) {
+      mapbox = '<div class="coverbox mapbox"><div class="bt">Site &amp; Jurisdiction</div>' +
+               '<div class="mapwrap">' + D.minimap_svg + '</div>' +
+               '<div class="mapcap">Jurisdiction boundary: ' +
+               esc(D.minimap_name || D.jurisdiction || '') +
+               ' · Source: US Census TIGERweb · ' + esc((D.generated_at||'').slice(0,10)) +
+               '</div></div>';
+    }
+    body += '<div class="cover">' +
+            '<div class="coverbox"><div class="bt">Jurisdiction stack</div>' + stack + '</div>' +
+            '<div class="coverbox"><div class="bt">Adopted codes</div>' + codes + '</div>' +
+            mapbox + '</div>';
+
+    // cover requirement matrix — pure summary of the printed line items
+    body += reqMatrix(rows);
+
+    // site hazard profile (compact: climate zone + seismic embedded with
+    // per-value source; wind/snow always point at the official lookup)
+    if (D.hazards) {
+      var H = D.hazards;
+      var ret = H.retrieved_at ? ' · retrieved ' + esc(String(H.retrieved_at).slice(0,10)) : '';
+      function hrow(label, val, src){
+        return '<div class="jrow"><span class="jlvl">' + label + '</span><span class="jval">' +
+               val + (src ? '<span class="hsrc">' + src + '</span>' : '') + '</span></div>';
+      }
+      var hz = '';
+      var CZ = H.climate_zone;
+      hz += hrow('Climate zone',
+        CZ ? esc(CZ.value) + (CZ.vintage ? ' — ' + esc(CZ.vintage) : '')
+           : 'unavailable — resolve from the adopted energy code / AHJ',
+        CZ ? esc(CZ.source || 'PNNL-33270 / DOE Building America Solution Center') +
+             ' — adopted energy code / AHJ governs, confirm locally' + ret : null);
+      var SE = H.seismic;
+      hz += hrow('Seismic',
+        SE ? 'S<sub>DS</sub> ' + esc(SE.sds) + ' g · S<sub>D1</sub> ' + esc(SE.sd1) + ' g — ' + esc(SE.design_category_note)
+           : 'unavailable — see official lookup: <span class="hlink">earthquake.usgs.gov/ws/designmaps</span>',
+        SE ? esc('U.S. Geological Survey designmaps (' + (SE.edition||'') + '), public domain; provisional — confirm with AHJ') + ret : null);
+      var W = H.wind || {};
+      hz += hrow('Wind (V<sub>ult</sub>)',
+        W.value_or_null != null ? esc(W.value_or_null) + ' mph'
+          : 'see official lookup: <span class="hlink">' + esc(W.lookup_url||'') + '</span>',
+        esc(W.note||'') + ret);
+      var S = H.snow || {};
+      hz += hrow('Snow (p<sub>g</sub>)',
+        S.value_or_null != null ? esc(S.value_or_null) + ' psf'
+          : 'see official lookup: <span class="hlink">' + esc(S.lookup_url||'') + '</span>',
+        esc(S.note||'') + ret);
+      // CONFIRM seal on the box title when any hazard line is a link-out
+      // (value resolves at the official lookup, not in this report)
+      var hazLinkout = !CZ || !SE || W.value_or_null == null || S.value_or_null == null;
+      body += '<div class="hazardbox"><div class="bt">Site Hazard Profile' +
+              (hazLinkout ? sealSVG('confirm', null, 22) : '') + '</div>' + hz + '</div>';
+    }
+
+    if (D.summary) body += '<div class="summary">' + esc(D.summary) + '</div>';
+
+    // title block strip + close sheet 1 (requirement tables start on sheet 2)
+    body += titleBlock(D, A, loc) + '</div>';
+
+    // sections — per-trade (Task 12) when grouped data is present; otherwise
+    // fall back to the legacy Federal / State / Local split so older reports
+    // (no trade_groups) still render.
+    var groups = D.trade_groups || [];
+    if (groups.length) {
+      body += tradeSections(groups);
+    } else {
+      var isFed = function(r){ return (r.category||'').toLowerCase() === 'federal' || (r.code_source||'') === 'Federal'; };
+      var isLocal = function(r){ var c=(r.category||'').toLowerCase(); return c === 'local' || c === 'amendment' || c === 'amendments'; };
+      var fed = rows.filter(isFed);
+      var local = rows.filter(function(r){ return !isFed(r) && isLocal(r); });
+      var state = rows.filter(function(r){ return !isFed(r) && !isLocal(r); });
+
+      body += '<h2>Federal Requirements</h2>';
+      body += fed.length ? reqTable(fed) : '<p class="none">No federal-layer line items recorded for this property.</p>';
+
+      body += '<h2>State Code Requirements</h2>';
+      body += state.length ? reqTable(state) : '<p class="none">No state code requirements recorded for this address.</p>';
+
+      body += '<h2>Local Requirements &amp; Amendments</h2>';
+      body += local.length ? reqTable(local)
+            : '<p class="none">No local amendments recorded' +
+              (A && A.amendment_notes ? ': ' + esc(A.amendment_notes) : ' — verify amendment packages with the local AHJ.') + '</p>';
+    }
+
+    // applies=false rows are never silently dropped (hazard_conditions.json
+    // _meta: "never silently drop or silently assert"): show them with the
+    // hazard-resolution / user-entry note that explains the determination.
+    var notApplicable = (D.requirements || []).filter(function(r){ return r.applies === false; });
+    if (notApplicable.length) {
+      body += '<h2>Determined Not Applicable at This Site</h2>';
+      body += '<p class="none">Resolved as not applicable from the site hazard profile or marked not applicable on the report; the resolution note is retained with each row. Confirm with the AHJ.</p>';
+      body += reqTable(notApplicable);
+    }
+
+    // Sources & Citations — dedicated page (Task 12)
+    body += citationsPage(D.citations || []);
+
+    document.getElementById('doc').innerHTML = body;
+
+    // repeating footer disclaimers (cmlibrary.LIBRARY_DISCLAIMERS, substituted)
+    var disc = D.disclaimers && D.disclaimers.length ? D.disclaimers : [
+      'Code requirements summarized here are for reference only. Always verify current requirements with the local Authority Having Jurisdiction (AHJ). This report is informational and is not legal advice.'
+    ];
+    // mono margin annotation — datasets line, real values only; absent
+    // datasets are omitted (the instrument shows absence, never pretends)
+    var ds = [];
+    if (D.verified_at) ds.push('CM_STATE_ADOPTIONS VERIFIED ' + esc(String(D.verified_at).slice(0,10)));
+    if (D.code_cycle) ds.push('LIBRARY ' + esc(D.code_cycle));
+    if (D.hazards && D.hazards.retrieved_at) ds.push('HAZARDS PNNL/USGS RETRIEVED ' + esc(String(D.hazards.retrieved_at).slice(0,10)));
+    if (D.minimap_svg) ds.push('BOUNDARY US CENSUS TIGERWEB ' + esc(String(D.generated_at||'').slice(0,10)));
+    var dsline = ds.length ? '<div class="fdatasets">DATASETS: ' + ds.join(' · ') + '</div>' : '';
+    document.getElementById('pagefooter').innerHTML =
+      '<div class="fbrand">12² AI · Codes&amp;More</div>' + dsline +
+      disc.map(function(d, i){ return '<p>' + (i+1) + '. ' + esc(d) + '</p>'; }).join('');
+
+    window.__PDF_READY__ = true;
+  }
+  render();
+</script>
+</body>
+</html>
